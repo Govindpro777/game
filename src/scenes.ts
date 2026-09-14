@@ -18,6 +18,10 @@ export type Scene = {
   w: number
   h: number
   cache: boolean
+  /** Path to a 1-bit walkable mask; white = walkable. Replaces `blocked` when set. */
+  mask?: string
+  /** Sprite scale for the player in this scene; the village is drawn further out. */
+  playerScale?: number
   spawn: { x: number; y: number }
   ground: (c: CanvasRenderingContext2D) => void
   decor: Decor[]
@@ -138,49 +142,26 @@ function fenceCol(
 
 /* ---------------- world ---------------- */
 
-const WS = 1.25
-const MAP_W = 1245
-const MAP_H = 798
-const R = (x: number, y: number, w: number, h: number): Rect => ({ x: x * WS, y: y * WS, w: w * WS, h: h * WS })
+const MAP_W = 1575
+const MAP_H = 998
 
 const world: Scene = {
   id: 'world',
   name: 'Willowbrook village',
-  w: MAP_W * WS,
-  h: MAP_H * WS,
+  w: MAP_W,
+  h: MAP_H,
   cache: false,
-  spawn: { x: 742 * WS, y: 648 * WS },
-  ground: (c) => c.drawImage(img('/scene/village.png'), 0, 0, MAP_W * WS, MAP_H * WS),
+  mask: '/scene/walkmask.png',
+  playerScale: 0.3,
+  spawn: { x: 762, y: 700 },
+  ground: (c) => c.drawImage(img('/scene/village.png'), 0, 0, MAP_W, MAP_H),
   decor: [],
-  blocked: [
-    R(0, 0, 1245, 128),
-    R(0, 128, 205, 312),
-    R(225, 92, 372, 336),
-    R(672, 172, 128, 104),
-    R(788, 148, 94, 112),
-    R(560, 270, 324, 252),
-    R(676, 484, 198, 78),
-    R(456, 446, 64, 76),
-    R(0, 494, 202, 304),
-    R(202, 510, 130, 288),
-    R(332, 526, 118, 272),
-    R(448, 594, 208, 204),
-    R(826, 426, 236, 208),
-    R(1070, 460, 175, 208),
-    R(852, 128, 84, 172),
-    R(876, 296, 122, 106),
-    R(934, 398, 106, 114),
-    R(960, 508, 88, 102),
-    R(940, 598, 80, 62),
-    R(1040, 128, 205, 332),
-    R(1105, 706, 140, 92),
-    R(0, 786, 1245, 12),
-  ],
+  blocked: [],
   zones: [
-    { ...R(385, 432, 120, 62), id: 'home', label: 'Home' },
-    { ...R(566, 526, 116, 60), id: 'seedshop', label: 'Seed shop', to: 'seedshop' },
-    { ...R(994, 672, 106, 58), id: 'toolshop', label: 'Tool shop', to: 'toolshop' },
-    { ...R(652, 640, 84, 78), id: 'farm', label: 'Farm', to: 'farm', lx: 516 * WS, ly: 598 * WS },
+    { x: 470, y: 548, w: 90, h: 52, id: 'home', label: 'Home' },
+    { x: 646, y: 620, w: 96, h: 54, id: 'seedshop', label: 'Seed shop', to: 'seedshop' },
+    { x: 1204, y: 782, w: 96, h: 54, id: 'toolshop', label: 'Tool shop', to: 'toolshop' },
+    { x: 452, y: 664, w: 90, h: 56, id: 'farm', label: 'Farm', to: 'farm', lx: 300, ly: 700 },
   ],
 }
 

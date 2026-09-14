@@ -14,12 +14,36 @@ import {
   refreshHud, setMapLabels, setSeedIndex, showPrompt, toast,
 } from './ui'
 
-const VIEW = { w: 1000, h: 620 }
+/** The world box we try to keep on screen; zoom scales it to fit, then covers. */
+const TARGET = { w: 960, h: 600 }
+const view = { w: 1000, h: 620, zoom: 1 }
 const PLAYER_S = 0.46
 const FRAME_W = 72
 const FRAME_H = 178
 const REACH = 96
 const RESPAWN_MS = 75_000
+
+type Mask = { w: number; h: number; bits: Uint8Array }
+const masks = new Map<string, Mask>()
+
+/** Rasterises a walkable-mask PNG once; white pixels are road. */
+function maskOf(path: string): Mask | null {
+  const hit = masks.get(path)
+  if (hit) return hit
+  const im = img(path)
+  if (!im.complete || !im.naturalWidth) return null
+  const c = document.createElement('canvas')
+  c.width = im.naturalWidth
+  c.height = im.naturalHeight
+  const g = c.getContext('2d', { willReadFrequently: true })!
+  g.drawImage(im, 0, 0)
+  const d = g.getImageData(0, 0, c.width, c.height).data
+  const bits = new Uint8Array(c.width * c.height)
+  for (let i = 0; i < bits.length; i++) bits[i] = d[i * 4] > 127 ? 1 : 0
+  const m = { w: c.width, h: c.height, bits }
+  masks.set(path, m)
+  return m
+}
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = canvas.getContext('2d')!
@@ -43,23 +67,28 @@ const ANIM: Record<string, { idle: number; walk: number[] }> = {
 
 /* ---------------- setup ---------------- */
 
-let canvasRect = { left: 0, top: 0, scale: 1 }
+let canvasRect = { left: 0, top: 0 }
 
-function measure() {
-  const r = canvas.getBoundingClientRect()
-  canvasRect = { left: r.left, top: r.top, scale: r.width / VIEW.w }
-}
-
+/**
+ * CSS sizes the canvas (it is inset:0 inside a fixed full-viewport #app); this only
+ * matches the backing store to whatever was actually laid out. Reading the real rect
+ * rather than innerWidth matters under browser zoom, where the viewport goes
+ * fractional and a rounded pixel size leaves a hairline gap at the edge.
+ */
 function resize() {
-  const dpr = Math.min(devicePixelRatio || 1, 2)
-  canvas.width = VIEW.w * dpr
-  canvas.height = VIEW.h * dpr
-  const s = Math.min(innerWidth / VIEW.w, innerHeight / VIEW.h)
-  canvas.style.width = `${VIEW.w * s}px`
-  canvas.style.height = `${VIEW.h * s}px`
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  const r = canvas.getBoundingClientRect()
+  view.w = Math.max(320, r.width)
+  view.h = Math.max(240, r.height)
+  const dpr = Math.min(devicePixelRatio || 1, 3)
+  const bw = Math.round(view.w * dpr)
+  const bh = Math.round(view.h * dpr)
+  if (canvas.width !== bw || canvas.height !== bh) {
+    canvas.width = bw
+    canvas.height = bh
+  }
+  ctx.setTransform(bw / view.w, 0, 0, bh / view.h, 0, 0)
   ctx.imageSmoothingEnabled = false
-  measure()
+  canvasRect = { left: r.left, top: r.top }
 }
 
 function ensureResources() {
@@ -82,7 +111,27 @@ function goto(id: SceneId) {
 const hits = (r: Rect, x: number, y: number) =>
   x > r.x - 14 && x < r.x + r.w + 14 && y > r.y - 7 && y < r.y + r.h + 7
 
+/**
+ * Half-width of the player's footprint in mask pixels. 3 clears every junction in
+ * the village; at 4 a single 7px pinch behind the greenhouse strands the northern
+ * half of the map. The sprite is wider than this and overhangs the kerb slightly,
+ * which is what you want -- feet on the road, shoulders over it.
+ */
+const BODY = 3
+
+function onRoad(m: Mask, x: number, y: number) {
+  const mx = Math.round((x / scene.w) * m.w)
+  const my = Math.round((y / scene.h) * m.h)
+  if (mx < 0 || my < 0 || mx >= m.w || my >= m.h) return false
+  return m.bits[my * m.w + mx] === 1
+}
+
 function blockedAt(x: number, y: number) {
+  if (scene.mask) {
+    const m = maskOf(scene.mask)
+    if (!m) return false
+    return !(onRoad(m, x, y) && onRoad(m, x - BODY, y) && onRoad(m, x + BODY, y))
+  }
   for (const r of scene.blocked) if (hits(r, x, y)) return true
   if (scene.id === 'farm') {
     for (const res of state.resources) {
@@ -320,16 +369,33 @@ function groundOf(s: Scene) {
   return c
 }
 
-function drawScene() {
-  ctx.fillStyle = '#1b2416'
-  ctx.fillRect(0, 0, VIEW.w, VIEW.h)
+/**
+ * Zoom that keeps a steady world scale but never lets the scene fall short of the
+ * window, so the canvas always fills it with no letterboxing. Snapped to quarter
+ * steps to keep the pixel art from shimmering.
+ */
+function sceneZoom() {
+  const fit = Math.min(view.w / TARGET.w, view.h / TARGET.h)
+  const cover = Math.max(view.w / scene.w, view.h / scene.h)
+  return Math.ceil(Math.max(fit, cover) * 4) / 4
+}
 
-  camX = Math.round(Math.max(0, Math.min(scene.w - VIEW.w, player.x - VIEW.w / 2)))
-  camY = Math.round(Math.max(0, Math.min(scene.h - VIEW.h, player.y - VIEW.h / 2)))
-  if (scene.w < VIEW.w) camX = -Math.round((VIEW.w - scene.w) / 2)
-  if (scene.h < VIEW.h) camY = -Math.round((VIEW.h - scene.h) / 2)
+function drawScene() {
+  const z = sceneZoom()
+  view.zoom = z
+  const worldW = view.w / z
+  const worldH = view.h / z
+
+  ctx.fillStyle = '#1b2416'
+  ctx.fillRect(0, 0, view.w, view.h)
+
+  camX = Math.max(0, Math.min(scene.w - worldW, player.x - worldW / 2))
+  camY = Math.max(0, Math.min(scene.h - worldH, player.y - worldH / 2))
+  camX = Math.round(camX * z) / z
+  camY = Math.round(camY * z) / z
 
   ctx.save()
+  ctx.scale(z, z)
   ctx.translate(-camX, -camY)
   if (scene.cache) ctx.drawImage(groundOf(scene), 0, 0)
   else scene.ground(ctx)
@@ -425,8 +491,9 @@ function drawPlayer() {
   const set = player.face === 'left' || player.face === 'right' ? ANIM.side : ANIM[player.face]
   const idx = player.moving ? set.walk[Math.floor(player.anim) % set.walk.length] : set.idle
   const sp = img(`/sprites/player/f${idx}.png`)
-  const w = FRAME_W * PLAYER_S
-  const h = FRAME_H * PLAYER_S
+  const ps = scene.playerScale ?? PLAYER_S
+  const w = FRAME_W * ps
+  const h = FRAME_H * ps
 
   ctx.save()
   ctx.globalAlpha = 0.25
@@ -459,19 +526,21 @@ function update() {
 /** Floating map labels for the village hub, positioned in CSS pixels over the canvas. */
 function updateLabels() {
   if (scene.id !== 'world') { setMapLabels(null); return }
-  const { left, top, scale } = canvasRect
+  const { left, top } = canvasRect
+  const k = view.zoom
   setMapLabels(
     scene.zones.map((z) => ({
       id: z.id,
       text: z.label,
-      x: left + ((z.lx ?? z.x + z.w / 2) - camX) * scale,
-      y: top + ((z.ly ?? z.y) - camY) * scale - 8,
+      x: left + ((z.lx ?? z.x + z.w / 2) - camX) * k,
+      y: top + ((z.ly ?? z.y) - camY) * k - 10,
       near: dist(z.x + z.w / 2, z.y + z.h / 2) < REACH,
     })),
   )
 }
 
 function frame(now: number) {
+  syncSize()
   const dtMs = Math.min(64, now - last)
   last = now
   const dt = dtMs / 1000
@@ -552,11 +621,55 @@ function buildTouch() {
   run.addEventListener('click', toggle)
 }
 
+/** Stops the browser treating the game as a scrollable, zoomable document. */
+function lockViewport() {
+  const stop = (e: Event) => e.preventDefault()
+  addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault() }, { passive: false })
+  for (const t of ['gesturestart', 'gesturechange', 'gestureend']) {
+    addEventListener(t, stop as EventListener, { passive: false })
+  }
+  addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault() }, { passive: false })
+  addEventListener('contextmenu', stop)
+  addEventListener('dragstart', stop)
+  // Ctrl +/-/0 is browser chrome and a page cannot intercept it; this only bites in
+  // embedded webviews. Zoom is handled by re-fitting instead -- see watchSize().
+  addEventListener('keydown', (e) => {
+    const zoomKey = ['Equal', 'Minus', 'Digit0', 'NumpadAdd', 'NumpadSubtract', 'Numpad0']
+    if ((e.ctrlKey || e.metaKey) && zoomKey.includes(e.code)) e.preventDefault()
+  })
+}
+
+let sizeObserver: ResizeObserver | null = null
+
+/**
+ * Re-fits on anything that changes our size: window resize, rotation, browser zoom.
+ * The per-frame check in syncSize() is the one that actually guarantees it; the
+ * listeners just make the response immediate rather than one frame later.
+ */
+function watchSize() {
+  addEventListener('resize', resize)
+  addEventListener('orientationchange', resize)
+  // Held in a variable on purpose: an unreferenced observer can be collected.
+  sizeObserver = new ResizeObserver(() => resize())
+  sizeObserver.observe(canvas)
+  const vv = window.visualViewport
+  if (vv) {
+    vv.addEventListener('resize', resize)
+    vv.addEventListener('scroll', resize)
+  }
+}
+
+/** Cheap every-frame guard so the canvas can never drift out of sync with its box. */
+function syncSize() {
+  if (canvas.offsetWidth !== Math.round(view.w) || canvas.offsetHeight !== Math.round(view.h)) resize()
+}
+
 /* ---------------- boot ---------------- */
 
 async function boot() {
   resize()
-  addEventListener('resize', resize)
+  watchSize()
+  lockViewport()
   initInput()
   initUi({ selectTool, cycleSeed, onReset: () => { ensureResources(); goto('world') } })
   buildTouch()

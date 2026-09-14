@@ -7,10 +7,10 @@ project root to rebuild it all; nothing here is edited by the game.
 
 | File | What it is | Where it ends up |
 |---|---|---|
-| `village-map.png` | The wide village map, 1281×816 with letterbox bars | World background (bars trimmed to 1245×798) |
+| `game-bg.jpeg` | The village map, 1575×998 | World background, plus the road mask the player walks on |
 | `sprite-sheet.png` | Ground tiles, props, 5 crops × growth stages, 9 player frames | ~60 sprites under `public/sprites/` |
 | `tool-shop-building.png` | The isolated shop building | Tool shop scene, and recoloured red for the seed shop |
-| `village-map-old.png` | The previous, darker village painting | Still the source for the tree sprite and the cobble ground texture |
+| `village-map-old.png` | An earlier village painting | Still the source for the tree sprite and the cobble ground texture |
 
 ## Not used yet
 
@@ -25,6 +25,7 @@ project root to rebuild it all; nothing here is edited by the game.
 |---|---|
 | `ref-village-street.jpg` | "Ted's Tools" street scene — style and mood reference |
 | `ref-contact-sheet.png` | A 2×2 contact sheet of the other images, downscaled |
+| `village-map.png` | The previous village map, replaced by `game-bg.jpeg` |
 
 ## `generated/`
 
@@ -32,6 +33,9 @@ Intermediates written by `npm run slice`, safe to delete:
 
 - `sprite-sheet-alpha.png` — `sprite-sheet.png` with the painted checkerboard keyed out to real alpha
 - `tool-shop-alpha.png` — same treatment for the building
+
+`public/scene/walkmask.png` is also generated: a black-and-white image of the
+village's roads, which is what the player's movement is tested against.
 
 ## The checkerboard problem
 

@@ -46,7 +46,7 @@ export const SPRITES = {
   nature: ['tree_a', 'rock_a', 'rock_b'].map((n) => `/sprites/nature/${n}.png`),
   ground: ['grass', 'cobble', 'soil'].map((n) => `/sprites/ground/${n}.png`),
   decals: ['rock_a', 'rock_b', 'flower_a', 'flower_b'].map((n) => `/sprites/decal/${n}.png`),
-  scenes: ['/scene/village.png', '/scene/toolshop.png', '/scene/seedshop.png'],
+  scenes: ['/scene/village.png', '/scene/toolshop.png', '/scene/seedshop.png', '/scene/walkmask.png'],
 }
 
 export const ALL = [

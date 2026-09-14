@@ -22,6 +22,24 @@ Then open http://localhost:5173.
 
 On touch devices the on-screen stick and RUN button work instead.
 
+## Display
+
+The canvas fills the whole window at any aspect ratio — no letterboxing. Zoom is
+picked per scene: it scales a ~960×600 world box to fit, then increases if needed
+so the scene always covers the viewport, snapped to quarter steps to keep the
+pixel art from shimmering. Wide windows therefore show a bigger picture rather
+than black bars, and the HUD reflows below 620px wide.
+
+Page gestures that a web page *can* intercept are suppressed, so they reach the
+game instead of the document: pinch-zoom, ctrl+wheel zoom, two-finger drag,
+overscroll, text selection, image drag and the long-press/right-click menu.
+
+**Ctrl +/- and Ctrl+0 cannot be blocked.** Those are browser chrome shortcuts and
+`preventDefault` on keydown does nothing for them outside an embedded webview.
+Instead, browser zoom is made harmless: the canvas is sized entirely by CSS and the
+render target is re-matched to its real measured box every frame, so the game
+re-fits exactly at any zoom level with no gap or letterbox.
+
 ## The loop
 
 Buy seeds at the market → till a plot with the hoe → plant → water →
@@ -41,10 +59,33 @@ under *Testing* in the tool shop to play the real economy.
 ## Scenes
 
 - **Willowbrook village** — the hub, with floating labels over each landmark that
-  light up gold when you're close enough to press `E`.
+  light up gold when you're close enough to press `E`. **You can only walk on the
+  roads** — see below.
 - **Ted's tools** — buy and upgrade the five tools, sell wood and stone.
 - **Seed & produce market** — buy seeds, sell your harvest.
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
+
+## Walking the village
+
+Movement in the village is not bounded by hand-placed rectangles. The road network
+is derived from the artwork itself by `tools/roadmask.mjs`, which classifies every
+pixel: roads are warm and desaturated (red leads, then green, then blue), while
+grass and trees invert that, water and sky lead blue, and roofs are too dark.
+
+Two thresholds are used, not one. A strict test finds clean, well-lit road; a loose
+test also admits road lying in shadow, but timber walls satisfy it too — so the
+loose set is never used alone, only grown into from the strict set by a bounded
+number of steps. A shadow across a road is a few pixels wide and gets bridged; a
+wall is tens of pixels tall and cannot be climbed within the budget.
+
+The result is cleaned up, eroded, then reduced to the single connected component
+reachable from a seed point, so there is never road you can see but not reach.
+`tools/maskcheck.mjs` verifies that and reports whether each landmark is still
+reachable on foot:
+
+```bash
+node tools/maskcheck.mjs preview.png
+```
 
 ## Crops
 
@@ -96,9 +137,11 @@ The helper scripts it orchestrates:
 - `blobs.mjs` — connected-component labelling to find each sprite's bounding box
 - `reroof.mjs` — recolours the tool shop's slate roof to terracotta for the seed shop
 - `cutout.mjs` — cuts trees, rocks and flowers out of painted scenes by colour
-- `annotate.mjs`, `collvis.mjs`, `grid.mjs`, `sheetview.mjs` — visual debugging aids
-  (`collvis.mjs` draws the village collision boxes and zones over the map, which is
-  how the walkable routes were authored)
+- `annotate.mjs`, `collvis.mjs`, `reachvis.mjs`, `grid.mjs`, `sheetview.mjs` — visual
+  debugging aids. `collvis.mjs` draws the village collision boxes and zones over the
+  map; `reachvis.mjs` flood-fills from spawn and shades every tile the player can
+  actually stand on, which is the reliable way to spot a fence or building you can
+  walk through, and it reports whether each zone is still reachable
 
 ## Known gaps
 

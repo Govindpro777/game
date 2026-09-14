@@ -3,7 +3,7 @@
  *
  *   assets/sprite-sheet.png       -> ~60 named sprites in public/sprites/
  *   assets/tool-shop-building.png -> public/scene/toolshop.png (+ recoloured seedshop.png)
- *   assets/village-map.png        -> public/scene/village.png
+ *   assets/game-bg.jpeg           -> public/scene/village.png + walkmask.png (roads)
  *   assets/village-map-old.png    -> the tree sprite (cut from the old painting)
  *
  * The two Gemini sheets have their "transparent" checkerboard painted in as real
@@ -68,9 +68,9 @@ for (const [idx, name] of Object.entries(NAMES)) {
 mkdirSync('public/scene', { recursive: true })
 await sharp(BUILDING).trim({ threshold: 1 }).png().toFile('public/scene/toolshop.png')
 run('node tools/reroof.mjs public/scene/toolshop.png public/scene/seedshop.png')
-await sharp('assets/village-map.png')
-  .extract({ left: 18, top: 10, width: 1245, height: 798 })
-  .png().toFile('public/scene/village.png')
+await sharp('assets/game-bg.jpeg').png().toFile('public/scene/village.png')
+// Walkable road network, derived from the artwork's own colours (see roadmask.mjs).
+run('node tools/roadmask.mjs assets/game-bg.jpeg public/scene/walkmask.png "" 760 700')
 
 /* 4. trees and rocks, cut from artwork rather than the sheet (it has neither) */
 mkdirSync(`${OUT}/nature`, { recursive: true })
