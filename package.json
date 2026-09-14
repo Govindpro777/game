@@ -1,0 +1,17 @@
+{
+  "name": "village-farm",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "slice": "node tools/slice.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.5",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

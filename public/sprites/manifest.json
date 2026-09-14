@@ -1,0 +1,242 @@
+{
+  "prop/well": {
+    "w": 120,
+    "h": 151
+  },
+  "tile/grass_rocks_a": {
+    "w": 129,
+    "h": 129
+  },
+  "tile/grass_rocks_b": {
+    "w": 124,
+    "h": 129
+  },
+  "tile/grass_a": {
+    "w": 63,
+    "h": 57
+  },
+  "tile/grass_b": {
+    "w": 62,
+    "h": 57
+  },
+  "tile/grass_c": {
+    "w": 52,
+    "h": 57
+  },
+  "prop/crate": {
+    "w": 85,
+    "h": 90
+  },
+  "prop/logs_big": {
+    "w": 121,
+    "h": 93
+  },
+  "prop/barrels": {
+    "w": 112,
+    "h": 85
+  },
+  "tile/grass_d": {
+    "w": 62,
+    "h": 57
+  },
+  "tile/grass_e": {
+    "w": 62,
+    "h": 57
+  },
+  "tile/grass_f": {
+    "w": 52,
+    "h": 57
+  },
+  "prop/crates_produce": {
+    "w": 159,
+    "h": 96
+  },
+  "tile/grass_edge": {
+    "w": 129,
+    "h": 129
+  },
+  "tile/dirt": {
+    "w": 124,
+    "h": 129
+  },
+  "tile/soil_rows": {
+    "w": 195,
+    "h": 131
+  },
+  "prop/barrel_produce": {
+    "w": 58,
+    "h": 79
+  },
+  "prop/sacks": {
+    "w": 105,
+    "h": 64
+  },
+  "prop/logs_small": {
+    "w": 100,
+    "h": 70
+  },
+  "prop/fence_post": {
+    "w": 18,
+    "h": 65
+  },
+  "prop/fence_rail": {
+    "w": 122,
+    "h": 64
+  },
+  "prop/fence_gate": {
+    "w": 126,
+    "h": 65
+  },
+  "prop/fence_post_b": {
+    "w": 19,
+    "h": 64
+  },
+  "prop/fence_post_c": {
+    "w": 21,
+    "h": 63
+  },
+  "prop/lantern": {
+    "w": 33,
+    "h": 58
+  },
+  "tile/stone_path": {
+    "w": 129,
+    "h": 103
+  },
+  "tile/dirt_stone": {
+    "w": 123,
+    "h": 103
+  },
+  "tile/grass_path": {
+    "w": 196,
+    "h": 103
+  },
+  "prop/fence_rail_b": {
+    "w": 119,
+    "h": 65
+  },
+  "prop/lantern_b": {
+    "w": 34,
+    "h": 61
+  },
+  "prop/cart": {
+    "w": 131,
+    "h": 58
+  },
+  "crop/wheat_4": {
+    "w": 89,
+    "h": 111
+  },
+  "crop/carrot_3": {
+    "w": 95,
+    "h": 131
+  },
+  "crop/wheat_3": {
+    "w": 78,
+    "h": 100
+  },
+  "crop/wheat_1": {
+    "w": 39,
+    "h": 74
+  },
+  "crop/wheat_2": {
+    "w": 40,
+    "h": 83
+  },
+  "crop/carrot_2": {
+    "w": 67,
+    "h": 94
+  },
+  "seed/wheat": {
+    "w": 37,
+    "h": 46
+  },
+  "seed/carrot": {
+    "w": 51,
+    "h": 61
+  },
+  "crop/carrot_1": {
+    "w": 47,
+    "h": 60
+  },
+  "crop/corn_3": {
+    "w": 87,
+    "h": 220
+  },
+  "crop/pumpkin_2": {
+    "w": 132,
+    "h": 66
+  },
+  "seed/corn": {
+    "w": 44,
+    "h": 43
+  },
+  "crop/corn_2": {
+    "w": 77,
+    "h": 205
+  },
+  "seed/pumpkin": {
+    "w": 30,
+    "h": 39
+  },
+  "crop/tomato_3": {
+    "w": 94,
+    "h": 172
+  },
+  "seed/tomato": {
+    "w": 50,
+    "h": 62
+  },
+  "crop/corn_1": {
+    "w": 82,
+    "h": 140
+  },
+  "crop/tomato_2": {
+    "w": 103,
+    "h": 138
+  },
+  "crop/pumpkin_3": {
+    "w": 232,
+    "h": 117
+  },
+  "crop/tomato_1": {
+    "w": 72,
+    "h": 107
+  },
+  "player/f3": {
+    "w": 77,
+    "h": 180
+  },
+  "player/f2": {
+    "w": 66,
+    "h": 179
+  },
+  "player/f4": {
+    "w": 71,
+    "h": 180
+  },
+  "player/f0": {
+    "w": 73,
+    "h": 179
+  },
+  "player/f1": {
+    "w": 72,
+    "h": 173
+  },
+  "player/f5": {
+    "w": 76,
+    "h": 177
+  },
+  "player/f6": {
+    "w": 76,
+    "h": 178
+  },
+  "player/f7": {
+    "w": 75,
+    "h": 177
+  },
+  "player/f8": {
+    "w": 70,
+    "h": 178
+  }
+}
