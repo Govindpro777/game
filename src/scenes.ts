@@ -152,7 +152,7 @@ const world: Scene = {
   h: MAP_H,
   cache: false,
   mask: '/scene/walkmask.png',
-  playerScale: 0.3,
+  playerScale: 0.45,
   spawn: { x: 762, y: 700 },
   ground: (c) => c.drawImage(img('/scene/village.png'), 0, 0, MAP_W, MAP_H),
   decor: [],

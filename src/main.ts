@@ -17,7 +17,7 @@ import {
 /** The world box we try to keep on screen; zoom scales it to fit, then covers. */
 const TARGET = { w: 960, h: 600 }
 const view = { w: 1000, h: 620, zoom: 1 }
-const PLAYER_S = 0.46
+const PLAYER_S = 0.6
 const FRAME_W = 72
 const FRAME_H = 178
 const REACH = 96
@@ -144,7 +144,7 @@ function blockedAt(x: number, y: number) {
 
 function move(dt: number) {
   const a = axis()
-  const speed = (a.run ? 305 : 185) * dt
+  const speed = (a.run ? 179 : 110.7) * dt
   player.moving = a.x !== 0 || a.y !== 0
 
   if (Math.abs(a.x) > Math.abs(a.y)) player.face = a.x > 0 ? 'right' : 'left'
