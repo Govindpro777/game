@@ -504,7 +504,8 @@ function drawPlayer() {
   ctx.restore()
 
   ctx.save()
-  if (player.face === 'left') {
+  // The side-view frames face left natively, so only 'right' needs a mirror.
+  if (player.face === 'right') {
     ctx.translate(player.x, 0)
     ctx.scale(-1, 1)
     ctx.drawImage(sp, -w / 2, player.y - h, w, h)
