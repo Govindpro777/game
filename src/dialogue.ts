@@ -16,10 +16,7 @@ el.innerHTML = `
     <img class="dlg-portrait" alt="" />
     <div class="dlg-body">
       <div class="dlg-plate">
-        <svg class="dlg-leaf" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20 4c0 9-6 14-12 14-2 0-4-1-4-1s1-9 8-11c3-1 8-2 8-2z" fill="#7cb342"/>
-          <path d="M4 20c4-6 8-9 13-12" stroke="#4a7c1f" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-        </svg>
+        <img class="dlg-leaf" src="/icon/leaf.png" alt="" aria-hidden="true" />
         <span class="dlg-names"><span class="dlg-role"></span><span class="dlg-name"></span></span>
       </div>
       <p class="dlg-line"></p>

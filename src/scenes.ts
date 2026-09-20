@@ -9,6 +9,8 @@ export type Zone = Rect & {
   /** Optional world-space anchor for the map label, when the walkable zone sits away from the landmark. */
   lx?: number;
   ly?: number;
+  /** Overrides the default interact radius (REACH in main.ts) for just this zone. */
+  reach?: number;
 };
 export type Decor = {
   src: HTMLImageElement;
@@ -409,8 +411,8 @@ const seedshop: Scene = {
   zones: [],
 };
 
-const INTERIOR_W = 1536;
-const INTERIOR_H = 1024;
+const INTERIOR_W = 1693;
+const INTERIOR_H = 929;
 
 const seedshopinterior: Scene = {
   id: "seedshopinterior",
@@ -418,8 +420,10 @@ const seedshopinterior: Scene = {
   w: INTERIOR_W,
   h: INTERIOR_H,
   cache: true,
-  playerScale: 0.5,
-  spawn: { x: 700, y: 820 }, // on the open floor in front of the counter
+  // Much bigger than the rest of the cast -- matches how large Bao reads standing
+  // next to Faye at the counter in this art.
+  playerScale: 1.4,
+  spawn: { x: 260, y: 750 }, // open floor by the grain sacks, left of the little table
   ground: (c) =>
     c.drawImage(
       img("/scene/seedshop-interior.png"),
@@ -430,13 +434,27 @@ const seedshopinterior: Scene = {
     ),
   decor: [],
   blocked: [
-    { x: 0, y: 0, w: 660, h: INTERIOR_H }, // left wall: shelves, jars, grain sacks, crates
-    { x: 660, y: 130, w: 480, h: 560 }, // the counter desk, Faye, and the shelf behind her
-    { x: 1400, y: 600, w: INTERIOR_W - 1400, h: INTERIOR_H - 600 }, // bottle shelf and lantern post by the door
+    // These two boxes stack vertically with only floor between them, and `hits()`
+    // inflates every rect by 14px/7px for collision -- the first cut left just a
+    // ~16px sliver between them once inflated, nowhere near enough for the player
+    // to actually walk through, which read as "stuck" even though technically not
+    // fully blocked. Widened the real gap here to something a body can fit in.
+    { x: 0, y: 0, w: 660, h: 680 }, // left wall: shelves, jars, grain sacks, crates
+    // The little display table (plant, folded cloth, price tag) sits well clear of
+    // that block on the open floor -- it needs its own footprint, not just whatever
+    // the sacks' box happens to cover, or the player walks straight through it.
+    { x: 300, y: 810, w: 420, h: 119 },
+    // Was cut 40px short of where the desk's lower shelf (bottles, seed packets)
+    // actually ends -- that gap let the player walk right into the counter.
+    { x: 680, y: 100, w: 550, h: 600 }, // the counter desk, Faye, and the grow-light shelf behind her
+    { x: 1550, y: 380, w: INTERIOR_W - 1550, h: INTERIOR_H - 380 }, // potted-plant rack by the door
   ],
   zones: [
-    { x: 820, y: 700, w: 160, h: 80, id: "counter", label: "Market stall" }, // open floor right in front of the counter -- the desk itself (below) is solid
-    { x: 1220, y: 620, w: 180, h: 140, id: "exit", label: "Village", to: "world" }, // the door mat
+    // Bigger than the norm and with its own longer reach, so browsing the stock
+    // doesn't need lining up right against the desk -- most of the open floor in
+    // front of it works.
+    { x: 750, y: 710, w: 350, h: 110, id: "counter", label: "Market stall", reach: 170 },
+    { x: 1290, y: 650, w: 210, h: 110, id: "exit", label: "Village", to: "world" }, // the door mat
   ],
 };
 

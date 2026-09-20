@@ -406,10 +406,13 @@ function findTarget(): Target | null {
     const cx = z.x + z.w / 2
     const cy = z.y + z.h / 2
     const d = dist(cx, cy)
-    if (d > Math.max(z.w, z.h) / 2 + 56 || d > bestD) continue
+    const reach = z.reach ?? bestD
+    if (d > Math.max(z.w, z.h) / 2 + 56 || d > reach) continue
     const a = zoneAction(z)
     if (!a) continue
-    bestD = d
+    // Never lets a wide-reach zone loosen the cutoff for the plain zones (or the
+    // farm's plots/resources) checked after it -- only ever tightens `bestD`.
+    bestD = Math.min(bestD, d)
     best = a
   }
 

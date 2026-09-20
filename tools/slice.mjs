@@ -16,6 +16,8 @@
  *   assets/seed-shop.png          -> public/scene/seedshop-interior.png, the walkable
  *                                    interior the conversation can send you into --
  *                                    Faye is baked into this art too (see scenes.ts)
+ *   assets/leaf.png               -> public/icon/leaf.png, the little leaf icon used
+ *                                    on Faye's dialogue name-plate
  *
  * The two Gemini sheets have their "transparent" checkerboard painted in as real
  * pixels, so every source image goes through dealpha.mjs first to recover alpha.
@@ -133,6 +135,10 @@ for (const [src, name] of [['assets/girl-profile.png', 'faye'], ['assets/boy-pro
 await sharp('assets/cloud.png').png().toFile('public/scene/cloud.png')
 await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
 await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/scene/seedshop-interior.png')
+
+/* 9. small UI icons, used as-is */
+mkdirSync('public/icon', { recursive: true })
+await sharp('assets/leaf.png').resize({ width: 64 }).png({ compressionLevel: 9 }).toFile('public/icon/leaf.png')
 
 writeFileSync(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2))
 console.log(`sliced ${n} sprites -> ${OUT}`)

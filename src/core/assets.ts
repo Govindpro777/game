@@ -48,6 +48,7 @@ export const SPRITES = {
   decals: ['rock_a', 'rock_b', 'flower_a', 'flower_b'].map((n) => `/sprites/decal/${n}.png`),
   npc: ['seedshop_girl'].map((n) => `/sprites/npc/${n}.png`),
   portraits: ['faye', 'bao'].map((n) => `/portrait/${n}.png`),
+  icons: ['leaf'].map((n) => `/icon/${n}.png`),
   scenes: [
     '/scene/village.png', '/scene/toolshop.png', '/scene/seedshop-closeup.jpg',
     '/scene/seedshop-interior.png', '/scene/walkmask.png',
@@ -57,7 +58,7 @@ export const SPRITES = {
 export const ALL = [
   ...SPRITES.player, ...SPRITES.tiles, ...SPRITES.props,
   ...SPRITES.crops, ...SPRITES.seeds, ...SPRITES.nature,
-  ...SPRITES.ground, ...SPRITES.decals, ...SPRITES.npc, ...SPRITES.portraits,
+  ...SPRITES.ground, ...SPRITES.decals, ...SPRITES.npc, ...SPRITES.portraits, ...SPRITES.icons,
   ...SPRITES.scenes,
 ]
 
