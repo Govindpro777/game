@@ -10,9 +10,12 @@
  *   assets/girl-profile.png       -> public/portrait/faye.png, her dialogue portrait
  *   assets/boy-profile.png        -> public/portrait/bao.png, the player's dialogue portrait
  *   assets/cloud.png              -> public/scene/cloud.png, the scene-transition wipe
- *   assets/close-up-seed-shop.JPG -> public/scene/seedshop-closeup.jpg -- both the intro
- *                                    cutscene's establishing shot AND the seed shop's
- *                                    own walkable background (see scenes.ts)
+ *   assets/close-up-seed-shop.JPG -> public/scene/seedshop-closeup.jpg, the outdoor plaza
+ *                                    the player walks into first; talking to Faye there
+ *                                    is what leads inside
+ *   assets/seed-shop.png          -> public/scene/seedshop-interior.png, the walkable
+ *                                    interior the conversation can send you into --
+ *                                    Faye is baked into this art too (see scenes.ts)
  *
  * The two Gemini sheets have their "transparent" checkerboard painted in as real
  * pixels, so every source image goes through dealpha.mjs first to recover alpha.
@@ -126,9 +129,10 @@ for (const [src, name] of [['assets/girl-profile.png', 'faye'], ['assets/boy-pro
   await sharp(src).resize({ width: 400 }).png({ compressionLevel: 9 }).toFile(`public/portrait/${name}.png`)
 }
 
-/* 8. scene-transition and cutscene assets, used as-is */
+/* 8. scene-transition asset and the seed shop's two scenes, all used as-is */
 await sharp('assets/cloud.png').png().toFile('public/scene/cloud.png')
 await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
+await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/scene/seedshop-interior.png')
 
 writeFileSync(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2))
 console.log(`sliced ${n} sprites -> ${OUT}`)

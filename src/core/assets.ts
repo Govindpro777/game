@@ -49,7 +49,8 @@ export const SPRITES = {
   npc: ['seedshop_girl'].map((n) => `/sprites/npc/${n}.png`),
   portraits: ['faye', 'bao'].map((n) => `/portrait/${n}.png`),
   scenes: [
-    '/scene/village.png', '/scene/toolshop.png', '/scene/seedshop-closeup.jpg', '/scene/walkmask.png',
+    '/scene/village.png', '/scene/toolshop.png', '/scene/seedshop-closeup.jpg',
+    '/scene/seedshop-interior.png', '/scene/walkmask.png',
   ],
 }
 

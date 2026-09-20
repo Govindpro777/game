@@ -2,7 +2,7 @@ import { ALL, load, img, crop as cropImg, nature, ground as groundTex } from './
 import {
   axis, debugKeys, digitPressed, endFrame, initInput, interactPressed, justPressed, stick, touchRun,
 } from './core/input'
-import { FIRST_VISIT, RETURN_VISIT } from './data/dialogue'
+import { FIRST_VISIT, RETURN_VISIT, RETURN_VISIT_STEADY } from './data/dialogue'
 import { closeDialogue, dialogueInteract, dialogueMove, isDialogueOpen, openDialogue } from './dialogue'
 import { CROPS, CROP_IDS } from './data/crops'
 import { TOOLS, TOOL_IDS, type ToolId } from './data/tools'
@@ -158,27 +158,34 @@ function ensureResources() {
 }
 
 /**
- * Faye greets the player once they walk right up to her -- not the moment the scene
- * loads (see `nearFaye` in frame()). A one-time introduction on the very first visit,
- * a short branching chat every time after. Declining her at the door ('leave') walks
- * the player back out to the village.
+ * Faye greets the player once they walk right up to her or her door -- not the
+ * moment the plaza loads (see `nearFaye` in frame()). A one-time introduction on the
+ * very first visit, a short branching chat every time after. Whether the shop
+ * actually opens depends entirely on how that conversation ends (see below).
  */
 function talkToFaye() {
   const first = !state.seenSeedShopIntro
-  openDialogue(first ? FIRST_VISIT : RETURN_VISIT, (outcome) => {
-    if (first && outcome) {
-      state.seenSeedShopIntro = true
-      save()
-    }
-    if (outcome === 'leave') goto('world')
+  // The "have you met Ted?" onboarding script plays until Bao has confirmed it
+  // twice; after that every visit uses the steady-state script instead.
+  const steady = state.metTedConfirms >= 2
+  const script = first ? FIRST_VISIT : steady ? RETURN_VISIT_STEADY : RETURN_VISIT
+  openDialogue(script, (outcome, flags) => {
+    if (first && outcome) state.seenSeedShopIntro = true
+    if (flags.has('metTedYes')) state.metTedConfirms += 1
+    save()
+    // Only a completed 'enter' walks the player on into the shop; declining, or
+    // escaping out of the conversation early, sends them back to the village --
+    // there's nothing else to do standing around the empty plaza.
+    goto(outcome === 'enter' ? 'seedshopinterior' : 'world')
   })
 }
 
-/** Faye's approximate position in the seedshop scene -- see her `decor` entry in scenes.ts. */
-const FAYE_POS = { x: 430, y: 470 }
-const FAYE_RADIUS = 90
-/** True while the player is already inside Faye's radius, so walking up to her only
- * fires the chat once per approach instead of every frame she stays in range. */
+/** Roughly halfway between the door and where Faye stands in the plaza -- close
+ * enough to either one counts as "walked up to her". */
+const FAYE_POS = { x: 400, y: 420 }
+const FAYE_RADIUS = 120
+/** True while the player is already inside that radius, so walking up only fires
+ * the chat once per approach instead of every frame they stay in range. */
 let nearFaye = false
 
 let transitioning = false
@@ -196,15 +203,16 @@ async function goto(id: SceneId, instant = false) {
     player.x = scene.spawn.x
     player.y = scene.spawn.y
     closeModal()
-    nearFaye = false
   }
   if (instant) {
     land()
+    nearFaye = false
     return
   }
   transitioning = true
   await slideCloud(-108, 0)
   land()
+  nearFaye = false
   await slideCloud(0, 108)
   transitioning = false
 }

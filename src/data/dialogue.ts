@@ -25,6 +25,9 @@ export type DialogueNode = {
   choices?: Choice[]
   /** Terminal line: the conversation ends with this outcome once it is dismissed. */
   end?: DialogueEnd
+  /** Recorded (in a Set handed to the caller's onEnd) if this node is ever reached --
+   * lets main.ts react to which branch was taken without the script touching state. */
+  flag?: string
 }
 
 export type DialogueScript = Record<string, DialogueNode>
@@ -111,6 +114,9 @@ export const RETURN_VISIT: DialogueScript = {
   met_ted: {
     who: 'faye',
     text: 'Awesome. He’s got some great tools. Need seeds today?',
+    // The second time Bao confirms this, the "did you meet Ted?" script retires
+    // for good in favour of RETURN_VISIT_STEADY -- see talkToFaye() in main.ts.
+    flag: 'metTedYes',
     choices: [
       { label: 'Yes', to: 'seeds_yes' },
       { label: 'No', to: 'seeds_no' },
@@ -132,6 +138,62 @@ export const RETURN_VISIT: DialogueScript = {
   seeds_no: {
     who: 'faye',
     text: 'Ok, stop by when you do. I’m open 9am - 6pm.',
+    next: 'walks_in',
+  },
+  walks_in: {
+    text: 'Faye walks inside the store. Bao walks to the door.',
+    next: 'door',
+  },
+  door: {
+    text: 'Enter the Seed Store?',
+    choices: [
+      { label: 'Yes', end: 'enter' },
+      { label: 'No', end: 'leave' },
+    ],
+  },
+}
+
+/**
+ * The steady-state script: once Bao has confirmed meeting Ted twice, the "have you
+ * met Ted?" onboarding question retires and every visit after uses this instead.
+ */
+export const RETURN_VISIT_STEADY: DialogueScript = {
+  start: {
+    who: 'faye',
+    text: 'Hey Bao! Back already? How’s your farm coming along?',
+    next: 'bao_going_well',
+  },
+  bao_going_well: {
+    who: 'bao',
+    text: 'It’s going well! I’m just getting started.',
+    next: 'faye_bigger',
+  },
+  faye_bigger: {
+    who: 'faye',
+    text: 'That’s good to hear. Are you planning to grow your farm even bigger?',
+    next: 'bao_definitely',
+  },
+  bao_definitely: {
+    who: 'bao',
+    text: 'Yes, definitely!',
+    next: 'faye_more_seeds',
+  },
+  faye_more_seeds: {
+    who: 'faye',
+    text: 'Then you’ll need more seeds. Want to pick up some today?',
+    choices: [
+      { label: 'Yes', to: 'seeds_yes' },
+      { label: 'No', to: 'seeds_no' },
+    ],
+  },
+  seeds_yes: {
+    who: 'faye',
+    text: 'Great! Let’s see what you’d like to grow next.',
+    end: 'enter',
+  },
+  seeds_no: {
+    who: 'faye',
+    text: 'No worries. Come back whenever you’re ready. Your farm isn’t going to grow overnight!',
     next: 'walks_in',
   },
   walks_in: {

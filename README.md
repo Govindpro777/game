@@ -86,10 +86,14 @@ already own, right under the price, so a purchase there is never a guess.
   roads** — see below. A shopkeeper stands permanently at the seed shop's gate —
   purely decorative, she doesn't move or interact.
 - **Ted's tools** — buy and upgrade the five tools, sell wood and stone.
-- **Seed & produce market** — buy seeds, sell your harvest. Unlike the other indoor
-  scenes it isn't a procedurally-built room: it's one painted close-up image, with the
-  walkable plaza and solid shapes (building, fountain, garden racks) carved out by hand.
-  You don't walk straight in: Faye meets you at the door first (see below).
+- **Seed & produce market** is two scenes, not one, neither of them a
+  procedurally-built room — both are painted flat backgrounds with the walkable floor
+  and solid shapes carved out by hand:
+  - Walking through the village door leads to an outdoor plaza (Faye standing in it as
+    a sprite), where **talking to her starts the moment you arrive** (see below).
+  - Saying yes sends you on into the shop's interior (Faye painted in at the counter
+    this time). Step up to the counter and press `E`/`Enter` to buy or sell; walk to
+    the door mat to leave, straight back to the village.
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
 
 Every scene change — walking into a building, leaving one, resetting your save —
@@ -98,20 +102,34 @@ input is held during the ~0.8s it takes, then resumes exactly where it left off.
 
 ## Talking to Faye
 
-The seed shop is the one door you don't just walk through. Interacting with it starts
-a conversation with Faye, and **walking in is the conversation's outcome** — she shows
-you inside, or she doesn't.
+The village door doesn't lead straight into the shop — it leads to the plaza outside
+it. You spawn well back from Faye, and the conversation only starts once you've
+actually walked up to her or the door — not the moment the plaza loads. **Walking on
+into the shop's interior is the conversation's outcome**, not something you do
+yourself: she shows you in, or she doesn't.
 
-- **The first time ever**, she introduces herself, points you at Ted for tools, and
-  takes you in for seeds. It's remembered in your save and never repeats.
-- **Every visit after**, she asks whether you've met Ted and whether you need seeds
-  today. Answer with the `Yes`/`No` buttons, `←`/`→` plus `Enter`, or a tap. Say no to
-  seeds and she heads inside, leaving you at the door with a last *Enter the Seed
-  Store?* — answer `No` and you stay in the village.
+The script she plays depends on how many times you've visited:
 
-`Esc` walks away from any conversation. The overlay itself is `src/dialogue.ts`; the
-scripts it plays are data in `src/data/dialogue.ts`, so rewording a line or adding a
-branch means editing that table, not the engine.
+1. **The first time ever**, she introduces herself, points you at Ted for tools, and
+   takes you in for seeds. Remembered in your save; never repeats.
+2. **Every visit after that**, she asks whether you've met Ted and whether you need
+   seeds today, until you've confirmed "yes, met Ted" **twice** across separate
+   visits — simply walking in and out doesn't count, only that specific answer does.
+3. **From then on, permanently**, she asks instead how the farm's coming along and
+   whether you want more seeds — the "have you met Ted" onboarding script never
+   plays again.
+
+Every script answers with the `Yes`/`No` buttons, `←`/`→` plus `Enter`, or a tap. In
+scripts 2 and 3, saying no to seeds sends her inside with a last *Enter the Seed
+Store?* — answer `No` there, or escape out of any conversation early, and you're sent
+straight back to the village rather than left standing alone in the plaza.
+
+The overlay itself is `src/dialogue.ts`; the scripts it plays are data in
+`src/data/dialogue.ts` (`FIRST_VISIT`, `RETURN_VISIT`, `RETURN_VISIT_STEADY`), so
+rewording a line or adding a branch means editing that table, not the engine. A
+node's optional `flag` is how the script tells `talkToFaye()` in `main.ts` which
+branch was taken (e.g. `met_ted`'s `flag: 'metTedYes'` is what advances the counter
+that eventually retires script 2) without the data file needing to import game state.
 
 ## Walking the village
 

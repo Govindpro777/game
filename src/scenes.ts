@@ -372,52 +372,71 @@ const toolshop = shopScene(
 );
 
 /**
- * The seed shop is a single flat painting (the same close-up used to open the shop's
- * conversation portraits aside) rather than a procedurally-built room: everything the player sees
- * -- building, stalls, fountain, garden racks -- is baked into one image, so there's
- * no decor layer to depth-sort against the player. Only the cobblestone plaza in
- * front is walkable; the solid shapes around it are carved out by hand below.
+ * The seed shop is two scenes, not one. Walking through the village door leads to
+ * `seedshop`, an outdoor plaza (one flat painting, Faye standing in it as a decor
+ * sprite) spawning you well back from her -- talking to her only starts once you've
+ * actually walked up to her or the door (see the proximity check in main.ts). Saying
+ * yes sends you on into `seedshopinterior` -- a second flat painting, this time with
+ * Faye baked into the art at the counter -- where you actually buy seeds and can
+ * walk back out to the village through its door.
  */
-const SEEDSHOP_W = 1280;
-const SEEDSHOP_H = 757;
+const CLOSEUP_W = 1280;
+const CLOSEUP_H = 757;
 
 const seedshop: Scene = {
   id: "seedshop",
   name: "Seed & produce market",
-  w: SEEDSHOP_W,
-  h: SEEDSHOP_H,
+  w: CLOSEUP_W,
+  h: CLOSEUP_H,
   cache: true,
   playerScale: 0.62,
-  spawn: { x: 160, y: 550 }, // out on the open plaza -- walking up to Faye is what starts the chat
+  spawn: { x: 160, y: 550 }, // far corner of the plaza -- walking up to the door or Faye is what starts the chat
   ground: (c) =>
     c.drawImage(
       img("/scene/seedshop-closeup.jpg"),
       0,
       0,
-      SEEDSHOP_W,
-      SEEDSHOP_H,
+      CLOSEUP_W,
+      CLOSEUP_H,
     ),
   decor: [{ src: npc("seedshop_girl"), x: 400, y: 390, s: 0.26 }],
   blocked: [
     { x: 255, y: 0, w: 660, h: 480 }, // the building itself, plus the stalls and barrels out front
     { x: 0, y: 60, w: 235, h: 220 }, // fountain
-    { x: 950, y: 0, w: 330, h: SEEDSHOP_H }, // garden racks, potted plants and the river beyond
-    { x: 0, y: 585, w: 315, h: SEEDSHOP_H - 585 }, // flower and tomato bed
+    { x: 950, y: 0, w: 330, h: CLOSEUP_H }, // garden racks, potted plants and the river beyond
+    { x: 0, y: 585, w: 315, h: CLOSEUP_H - 585 }, // flower and tomato bed
+  ],
+  zones: [],
+};
+
+const INTERIOR_W = 1536;
+const INTERIOR_H = 1024;
+
+const seedshopinterior: Scene = {
+  id: "seedshopinterior",
+  name: "Seed & produce market",
+  w: INTERIOR_W,
+  h: INTERIOR_H,
+  cache: true,
+  playerScale: 0.5,
+  spawn: { x: 700, y: 820 }, // on the open floor in front of the counter
+  ground: (c) =>
+    c.drawImage(
+      img("/scene/seedshop-interior.png"),
+      0,
+      0,
+      INTERIOR_W,
+      INTERIOR_H,
+    ),
+  decor: [],
+  blocked: [
+    { x: 0, y: 0, w: 660, h: INTERIOR_H }, // left wall: shelves, jars, grain sacks, crates
+    { x: 660, y: 130, w: 480, h: 560 }, // the counter desk, Faye, and the shelf behind her
+    { x: 1400, y: 600, w: INTERIOR_W - 1400, h: INTERIOR_H - 600 }, // bottle shelf and lantern post by the door
   ],
   zones: [
-    { x: 645, y: 495, w: 150, h: 75, id: "counter", label: "Market stall" },
-    // The interaction radius is well under the ~300px gap between the door and the
-    // stalls, so a second zone right at the door lets buying trigger from there too.
-    { x: 330, y: 480, w: 160, h: 90, id: "counter", label: "Seed shop" },
-    {
-      x: 555,
-      y: 675,
-      w: 210,
-      h: 60,
-      id: "exit",
-      label: "Village",
-      to: "world",
-    },
+    { x: 820, y: 700, w: 160, h: 80, id: "counter", label: "Market stall" }, // open floor right in front of the counter -- the desk itself (below) is solid
+    { x: 1220, y: 620, w: 180, h: 140, id: "exit", label: "Village", to: "world" }, // the door mat
   ],
 };
 
@@ -513,4 +532,5 @@ export const SCENES: Record<SceneId, Scene> = {
   farm,
   toolshop,
   seedshop,
+  seedshopinterior,
 };

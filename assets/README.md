@@ -13,7 +13,8 @@ project root to rebuild it all; nothing here is edited by the game.
 | `village-map-old.png` | An earlier village painting | Still the source for the tree sprite and the cobble ground texture |
 | `seed-shop-girl.png` | A 5x2 character turnaround sheet | The 3/4 pose (col 4, row 0), mirrored to face left, cut out as the seed shop's standing NPC |
 | `cloud.png` | A seamless cloud-sky texture | The scene-transition wipe, copied as-is to `public/scene/cloud.png` |
-| `close-up-seed-shop.JPG` | A close-up render of the seed shop | The seed shop scene's walkable background, copied as-is to `public/scene/seedshop-closeup.jpg` |
+| `seed-shop.png` | The seed shop's interior: counter, Faye, shelves, a drawn exit door | `seedshopinterior` scene's walkable background, copied as-is to `public/scene/seedshop-interior.png`. Faye is part of this art, not a separate sprite |
+| `close-up-seed-shop.JPG` | An outdoor close-up of the shop's front | `seedshop` scene's walkable background (the plaza players land in first), copied as-is to `public/scene/seedshop-closeup.jpg` |
 | `girl-profile.png` | Faye's portrait, painted inside an ornate frame | Her conversation portrait, downscaled to `public/portrait/faye.png` |
 | `boy-profile.png` | Bao's portrait, framed to match | The player's conversation portrait, downscaled to `public/portrait/bao.png` |
 
@@ -21,7 +22,7 @@ project root to rebuild it all; nothing here is edited by the game.
 
 | File | What it is | Why it's unused |
 |---|---|---|
-| `seed-shop-interior.png` | A walkable isometric shop room with a shopkeeper | Has a game UI painted into it (title chip, coin counter, joystick, run button) that would need removing first |
+| `seed-shop-interior.png` | An earlier walkable shop-room concept, a different room with a different shopkeeper | Has no exit drawn anywhere in it (it's an open-fronted cutaway with a solid black background, not a checkerboard), so `seed-shop.png` is in use instead -- its door is what the exit zone needs |
 | `tool-shop-interior.jpg` | A shop-UI mockup: inventory grid, stock list, repair/upgrade | Front-facing perspective, so a player sprite has no floor to stand on. Better used as artwork behind the shop panel, or as a design target for reskinning it |
 
 ## Reference only

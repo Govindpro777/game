@@ -41,15 +41,19 @@ const nextEl = el.querySelector('.dlg-next') as HTMLElement
 
 let script: DialogueScript = {}
 let key = 'start'
-let onEnd: ((outcome: DialogueEnd | null) => void) | null = null
+let onEnd: ((outcome: DialogueEnd | null, flags: Set<string>) => void) | null = null
 /** Which answer the keyboard has highlighted; -1 when the line has no choices. */
 let focused = -1
+/** Every node's `flag` seen so far this conversation, handed to `onEnd` -- lets the
+ * caller know which branch was taken without the script needing to touch game state. */
+let flags = new Set<string>()
 
 const node = (): DialogueNode | undefined => script[key]
 
 function render() {
   const n = node()
   if (!n) return closeDialogue(null)
+  if (n.flag) flags.add(n.flag)
 
   if (n.who) {
     const s = SPEAKERS[n.who]
@@ -96,10 +100,11 @@ function pick(c: Choice) {
 
 export const isDialogueOpen = () => !el.hidden
 
-export function openDialogue(s: DialogueScript, done: (outcome: DialogueEnd | null) => void) {
+export function openDialogue(s: DialogueScript, done: (outcome: DialogueEnd | null, flags: Set<string>) => void) {
   script = s
   key = 'start'
   onEnd = done
+  flags = new Set()
   el.hidden = false
   root.classList.add('dialogue')
   render()
@@ -136,7 +141,7 @@ export function closeDialogue(outcome: DialogueEnd | null = null) {
   root.classList.remove('dialogue')
   const done = onEnd
   onEnd = null
-  done?.(outcome)
+  done?.(outcome, flags)
 }
 
 // Clicking the box advances it, the same as pressing Enter -- but clicks that land
