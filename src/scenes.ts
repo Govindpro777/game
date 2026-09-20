@@ -373,7 +373,7 @@ const toolshop = shopScene(
 
 /**
  * The seed shop is a single flat painting (the same close-up used to open the shop's
- * intro cutscene) rather than a procedurally-built room: everything the player sees
+ * conversation portraits aside) rather than a procedurally-built room: everything the player sees
  * -- building, stalls, fountain, garden racks -- is baked into one image, so there's
  * no decor layer to depth-sort against the player. Only the cobblestone plaza in
  * front is walkable; the solid shapes around it are carved out by hand below.

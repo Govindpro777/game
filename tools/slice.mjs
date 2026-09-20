@@ -6,6 +6,8 @@
  *   assets/game-bg.jpeg           -> public/scene/village.png + walkmask.png (roads)
  *   assets/village-map-old.png    -> the tree sprite (cut from the old painting)
  *   assets/girl-seed-shop.png     -> the seed shop's standing NPC
+ *   assets/girl-profile.png       -> public/portrait/faye.png, her dialogue portrait
+ *   assets/boy-profile.png        -> public/portrait/bao.png, the player's dialogue portrait
  *   assets/cloud.png              -> public/scene/cloud.png, the scene-transition wipe
  *   assets/close-up-seed-shop.JPG -> public/scene/seedshop-closeup.jpg -- both the intro
  *                                    cutscene's establishing shot AND the seed shop's
@@ -107,7 +109,14 @@ const gb = girlBoxes[0]
 await sharp(GIRL).extract({ left: gb.x, top: gb.y, width: gb.w, height: gb.h })
   .png().toFile(`${OUT}/npc/seedshop_girl.png`)
 
-/* 7. scene-transition and cutscene assets, used as-is */
+/* 7. dialogue portraits: already painted inside ornate frames, so they go in whole,
+   just downscaled to roughly 3x their on-screen size */
+mkdirSync('public/portrait', { recursive: true })
+for (const [src, name] of [['assets/girl-profile.png', 'faye'], ['assets/boy-profile.png', 'bao']]) {
+  await sharp(src).resize({ width: 400 }).png({ compressionLevel: 9 }).toFile(`public/portrait/${name}.png`)
+}
+
+/* 8. scene-transition and cutscene assets, used as-is */
 await sharp('assets/cloud.png').png().toFile('public/scene/cloud.png')
 await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
 

@@ -18,7 +18,7 @@ Then open http://localhost:5173.
 | `E` or `Enter` | Interact with whatever you're standing next to |
 | `1`–`5` | Select hoe / watering can / axe / pickaxe / shovel |
 | `Q` | Cycle through the seeds you own |
-| `Esc` | Close a shop panel or skip the intro cutscene |
+| `Esc` | Close a shop panel, or walk away from a conversation |
 
 A village landmark's floating label (Home, Seed shop, Tool shop, Farm) also lights up
 and becomes clickable/tappable once you're close enough — clicking it does the same
@@ -87,18 +87,31 @@ already own, right under the price, so a purchase there is never a guess.
   purely decorative, she doesn't move or interact.
 - **Ted's tools** — buy and upgrade the five tools, sell wood and stone.
 - **Seed & produce market** — buy seeds, sell your harvest. Unlike the other indoor
-  scenes it isn't a procedurally-built room: it's one painted close-up image (the
-  same one used for the intro below), with the walkable plaza and solid shapes
-  (building, fountain, garden racks) carved out by hand. The first time you ever walk
-  in, a one-time intro plays first: the same close-up, then a short dialogue with the
-  shopkeeper, Mira, advanced a line at a time with `E`/`Enter` (or a tap/click on the
-  dialogue box). `Esc` skips it. It's remembered in your save and never repeats.
+  scenes it isn't a procedurally-built room: it's one painted close-up image, with the
+  walkable plaza and solid shapes (building, fountain, garden racks) carved out by hand.
+  You don't walk straight in: Faye meets you at the door first (see below).
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
 
 Every scene change — walking into a building, leaving one, resetting your save —
-plays a brief cloud-wipe transition (`src/cutscene.ts` handles the dialogue overlay;
-the wipe itself lives in `goto()` in `src/main.ts`). It's purely cosmetic: input is
-held during the ~0.8s it takes, then resumes exactly where it left off.
+plays a brief cloud-wipe transition (`goto()` in `src/main.ts`). It's purely cosmetic:
+input is held during the ~0.8s it takes, then resumes exactly where it left off.
+
+## Talking to Faye
+
+The seed shop is the one door you don't just walk through. Interacting with it starts
+a conversation with Faye, and **walking in is the conversation's outcome** — she shows
+you inside, or she doesn't.
+
+- **The first time ever**, she introduces herself, points you at Ted for tools, and
+  takes you in for seeds. It's remembered in your save and never repeats.
+- **Every visit after**, she asks whether you've met Ted and whether you need seeds
+  today. Answer with the `Yes`/`No` buttons, `←`/`→` plus `Enter`, or a tap. Say no to
+  seeds and she heads inside, leaving you at the door with a last *Enter the Seed
+  Store?* — answer `No` and you stay in the village.
+
+`Esc` walks away from any conversation. The overlay itself is `src/dialogue.ts`; the
+scripts it plays are data in `src/data/dialogue.ts`, so rewording a line or adding a
+branch means editing that table, not the engine.
 
 ## Walking the village
 
@@ -144,8 +157,9 @@ src/
   scenes.ts        the four scenes: ground, decor, collision, zones
   state.ts         save/load, plots, inventory
   ui.ts            HUD and shop panels (DOM overlay, not canvas)
+  dialogue.ts      the conversation overlay: portrait, name plate, answer buttons
   core/            asset loading, keyboard + touch input
-  data/            crop and tool tables — tune balance here
+  data/            crop, tool and conversation tables — tune balance and script here
 ```
 
 ## Assets

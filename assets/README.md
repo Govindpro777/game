@@ -11,9 +11,11 @@ project root to rebuild it all; nothing here is edited by the game.
 | `sprite-sheet.png` | Ground tiles, props, 5 crops × growth stages, 9 player frames | ~60 sprites under `public/sprites/` |
 | `tool-shop-building.png` | The isolated shop building | Tool shop scene, and recoloured red for the seed shop |
 | `village-map-old.png` | An earlier village painting | Still the source for the tree sprite and the cobble ground texture |
-| `girl-seed-shop.png` | An 8-pose character turnaround sheet | Front-facing pose cut out as the seed shop's standing NPC, and as her portrait in the intro dialogue |
+| `girl-seed-shop.png` | An 8-pose character turnaround sheet | Front-facing pose cut out as the seed shop's standing NPC |
 | `cloud.png` | A seamless cloud-sky texture | The scene-transition wipe, copied as-is to `public/scene/cloud.png` |
-| `close-up-seed-shop.JPG` | A close-up render of the seed shop | The full-screen opening shot of the shop's first-visit intro, copied as-is to `public/scene/seedshop-closeup.jpg` |
+| `close-up-seed-shop.JPG` | A close-up render of the seed shop | The seed shop scene's walkable background, copied as-is to `public/scene/seedshop-closeup.jpg` |
+| `girl-profile.png` | Faye's portrait, painted inside an ornate frame | Her conversation portrait, downscaled to `public/portrait/faye.png` |
+| `boy-profile.png` | Bao's portrait, framed to match | The player's conversation portrait, downscaled to `public/portrait/bao.png` |
 
 ## Not used yet
 

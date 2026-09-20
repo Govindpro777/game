@@ -112,27 +112,74 @@ html, body {
   transform: translateX(-108%);
 }
 
-/* -------- one-shot intro cutscene (e.g. the seed shop's first visit) -------- */
+/* -------- conversation overlay (Faye at the seed shop door) -------- */
 
-.cutscene { position: absolute; inset: 0; z-index: 30; background: #0a0705; overflow: hidden; }
-.cs-image { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.cs-box {
-  position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%);
-  width: min(640px, 88vw); background: rgba(28,22,16,.94); border: 1px solid rgba(230,200,140,.4);
-  border-radius: 14px; padding: 16px 18px; display: flex; gap: 14px; align-items: flex-start;
-  cursor: pointer;
+/* Anchored to the bottom and click-through everywhere except the box itself, so the
+   on-screen RUN/interact buttons stay tappable while a conversation is running. */
+#ui > .dlg { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; pointer-events: none; padding: 0 16px 18px; }
+#ui.dialogue .hotbar { display: none; }
+
+.dlg-box {
+  pointer-events: auto; position: relative; cursor: pointer;
+  width: min(1080px, 100%); margin: 0 auto; min-height: 124px;
+  display: flex; align-items: center; gap: 20px; padding: 20px 26px 20px 22px;
+  background: linear-gradient(#f7ecd5, #ead8b4);
+  border: 5px solid #b98a45; border-radius: 16px;
+  box-shadow: 0 0 0 3px #4a3117, 0 14px 34px rgba(0,0,0,.45);
 }
-/* [hidden] and .cs-box{display:flex} are equal specificity, so without this the
-   attribute would silently lose to the author rule and the box would stay visible. */
-.cs-box[hidden] { display: none; }
-.cs-portrait { width: 60px; height: 60px; object-fit: contain; image-rendering: pixelated; flex: none; }
-.cs-speaker { display: block; font-size: 12.5px; font-weight: 700; color: #f0cd6b; letter-spacing: .03em; margin-bottom: 4px; }
-.cs-line { font-size: 15px; line-height: 1.45; color: #f3e6cb; }
-.cs-hint { left: 50%; bottom: 44px; transform: translateX(-50%); }
+/* Thin inner rule, the way the reference art frames its parchment. */
+.dlg-box::after {
+  content: ''; position: absolute; inset: 4px; border: 2px solid rgba(160,120,60,.45);
+  border-radius: 9px; pointer-events: none;
+}
+
+.dlg-portrait {
+  flex: none; width: 118px; margin: 0; display: block;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,.45));
+}
+.dlg-portrait[hidden] { display: none; }
+
+
+.dlg-plate {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-bottom: 10px; padding: 6px 18px 7px;
+  background: linear-gradient(#5d3e1c, #432a11);
+  border: 2px solid #b98a45; border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(0,0,0,.4);
+}
+.dlg-plate[hidden] { display: none; }
+.dlg-leaf { width: 17px; height: 17px; flex: none; }
+.dlg-name { font-size: 18px; font-weight: 700; color: #f6e7c4; letter-spacing: .02em; white-space: nowrap; }
+
+.dlg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dlg-line { font-size: 21px; line-height: 1.42; color: #3f2b14; font-weight: 600; }
+.narration .dlg-line { text-align: center; font-style: italic; color: #5a441f; }
+
+.dlg-choices { display: flex; gap: 12px; margin-top: 14px; }
+.dlg-choices[hidden] { display: none; }
+.narration .dlg-choices { justify-content: center; }
+.dlg-choice {
+  font-family: inherit; font-size: 17px; font-weight: 700; color: #3f2b14; cursor: pointer;
+  min-width: 96px; padding: 8px 20px; border-radius: 9px;
+  background: linear-gradient(#fdf4e2, #ecd9b4); border: 2px solid #b98a45;
+  box-shadow: 0 2px 0 rgba(90,60,24,.35);
+}
+.dlg-choice.on { background: linear-gradient(#ffdd94, #f0c368); border-color: #6b4a1e; box-shadow: 0 0 0 2px rgba(107,74,30,.35), 0 2px 0 rgba(90,60,24,.35); }
+
+.dlg-next { position: absolute; right: 16px; bottom: 10px; font-size: 17px; color: #6b4a1e; animation: dlg-bob 1s ease-in-out infinite; }
+.dlg-next[hidden] { display: none; }
+@keyframes dlg-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
 
 @media (max-width: 620px) {
-  .cs-box { bottom: 78px; padding: 12px 14px; gap: 10px; }
-  .cs-portrait { width: 46px; height: 46px; }
-  .cs-line { font-size: 13.5px; }
-  .cs-hint { bottom: 30px; font-size: 12px; }
+  .dlg { padding: 0 8px 10px; }
+  .dlg-box { min-height: 96px; gap: 12px; padding: 14px 16px 14px 12px; border-width: 4px; border-radius: 12px; }
+    .dlg-portrait { width: 74px; margin: 0; }
+  .dlg-plate { margin-bottom: 7px; padding: 4px 12px 5px; gap: 6px; }
+  .dlg-leaf { width: 13px; height: 13px; }
+  .dlg-name { font-size: 14px; }
+  .dlg-line { font-size: 15px; line-height: 1.38; }
+  .dlg-choices { gap: 8px; margin-top: 10px; }
+  .dlg-choice { font-size: 14px; min-width: 72px; padding: 6px 14px; }
+  .dlg-next { font-size: 14px; right: 10px; bottom: 6px; }
 }

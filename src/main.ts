@@ -2,7 +2,8 @@ import { ALL, load, img, crop as cropImg, nature, ground as groundTex } from './
 import {
   axis, debugKeys, digitPressed, endFrame, initInput, interactPressed, justPressed, stick, touchRun,
 } from './core/input'
-import { advanceCutscene, closeCutscene, isCutsceneOpen, openCutscene, type Step } from './cutscene'
+import { FIRST_VISIT, RETURN_VISIT } from './data/dialogue'
+import { closeDialogue, dialogueInteract, dialogueMove, isDialogueOpen, openDialogue } from './dialogue'
 import { CROPS, CROP_IDS } from './data/crops'
 import { TOOLS, TOOL_IDS, type ToolId } from './data/tools'
 import {
@@ -17,8 +18,8 @@ import {
   refreshHud, setMapLabels, setSeedIndex, showPrompt, toast,
 } from './ui'
 
-/** True while any full-screen overlay owns input: the shop panel or the intro cutscene. */
-const uiBusy = () => modalOpen() || isCutsceneOpen()
+/** True while an overlay owns input: a shop panel or a conversation. */
+const uiBusy = () => modalOpen() || isDialogueOpen()
 
 /** The world box we try to keep on screen; zoom scales it to fit, then covers. */
 const TARGET = { w: 960, h: 600 }
@@ -156,26 +157,20 @@ function ensureResources() {
   ]
 }
 
-const GIRL_PORTRAIT = '/sprites/npc/seedshop_girl.png'
-const PLAYER_PORTRAIT = '/sprites/player/f4.png'
-
-const SEED_SHOP_INTRO: Step[] = [
-  { kind: 'image', src: '/scene/seedshop-closeup.jpg' },
-  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'Oh! A new face in Willowbrook — welcome to the seed shop!' },
-  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'I’m Mira. I grow and sell seeds for just about everything that’ll take root here.' },
-  { kind: 'line', speaker: 'You', portrait: PLAYER_PORTRAIT, text: 'Nice to meet you, Mira. I could use some seeds to get my farm started.' },
-  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'You’ve come to the right place. Carrots and wheat are easiest if you’re just starting out.' },
-  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'Take a look at what I’ve got — step up to the counter and press E any time you want to buy or sell.' },
-]
-
-/** One-time flourishes that fire the moment a scene finishes appearing. */
-function onEnterScene(id: SceneId) {
-  if (id === 'seedshop' && !state.seenSeedShopIntro) {
-    openCutscene(SEED_SHOP_INTRO, () => {
+/**
+ * Faye greets the player just inside the shop: a one-time introduction on the very
+ * first visit, and a short branching chat every time after. Declining her at the
+ * door ('leave') walks the player back out to the village.
+ */
+function talkToFaye() {
+  const first = !state.seenSeedShopIntro
+  openDialogue(first ? FIRST_VISIT : RETURN_VISIT, (outcome) => {
+    if (first && outcome) {
       state.seenSeedShopIntro = true
       save()
-    })
-  }
+    }
+    if (outcome === 'leave') goto('world')
+  })
 }
 
 let transitioning = false
@@ -196,7 +191,7 @@ async function goto(id: SceneId, instant = false) {
   }
   if (instant) {
     land()
-    onEnterScene(id)
+    if (id === 'seedshop') talkToFaye()
     return
   }
   transitioning = true
@@ -204,7 +199,7 @@ async function goto(id: SceneId, instant = false) {
   land()
   await slideCloud(0, 108)
   transitioning = false
-  onEnterScene(id)
+  if (id === 'seedshop') talkToFaye()
 }
 
 /* ---------------- collision ---------------- */
@@ -662,9 +657,11 @@ function frame(now: number) {
   last = now
   const dt = dtMs / 1000
 
-  if (isCutsceneOpen()) {
-    if (interactPressed()) advanceCutscene()
-    else if (justPressed('escape')) closeCutscene()
+  if (isDialogueOpen()) {
+    if (interactPressed()) dialogueInteract()
+    else if (justPressed('escape')) closeDialogue()
+    else if (justPressed('arrowleft') || justPressed('keya')) dialogueMove(-1)
+    else if (justPressed('arrowright') || justPressed('keyd')) dialogueMove(1)
   } else if (!modalOpen() && !transitioning) {
     move(dt)
     const d = digitPressed()

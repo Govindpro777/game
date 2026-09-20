@@ -1,4 +1,4 @@
-import { isCutsceneOpen } from './cutscene'
+import { isDialogueOpen } from './dialogue'
 import { CROPS, CROP_IDS, type CropId } from './data/crops'
 import { STONE_PRICE, TOOLS, TOOL_IDS, WOOD_PRICE, type ToolId } from './data/tools'
 import { state, save, reset } from './state'
@@ -22,7 +22,7 @@ const hint = el('div', 'hint')
 const labelLayer = el('div', 'labels')
 prompt.style.display = 'none'
 toastEl.style.display = 'none'
-bagBtn.onclick = () => { if (!modalOpen() && !isCutsceneOpen()) openInventory() }
+bagBtn.onclick = () => { if (!modalOpen() && !isDialogueOpen()) openInventory() }
 root.append(labelLayer, place, coins, hint, prompt, hotbar, bagBtn, toastEl)
 
 export const canAfford = (price: number) => state.unlimited || state.coins >= price
