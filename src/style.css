@@ -23,19 +23,22 @@ html, body {
 .coin-dot { width: 17px; height: 17px; border-radius: 50%; background: #e3b23c; border: 2px solid #a87e1e; flex: none; }
 .place { top: 14px; left: 14px; padding: 8px 14px; font-size: 15px; font-weight: 600; letter-spacing: .02em; }
 
-.hotbar { bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 7px; }
-.slot { width: 58px; height: 56px; border-radius: 7px; background: rgba(0,0,0,.35); border: 1px solid rgba(230,200,140,.22); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; user-select: none; }
+.hotbar { bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; }
+.slot { width: 46px; height: 44px; border-radius: 7px; background: rgba(0,0,0,.35); border: 1px solid rgba(230,200,140,.22); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; user-select: none; }
 .slot.on { border-color: #f0cd6b; background: rgba(240,205,107,.16); }
 .slot.locked { opacity: .38; }
-.slot b { font-size: 12px; font-weight: 600; }
-.slot i { font-size: 10px; font-style: normal; color: #c4a878; }
+.slot b { font-size: 10px; font-weight: 600; }
+.slot i { font-size: 8.5px; font-style: normal; color: #c4a878; }
 .slot u { position: absolute; }
 
-.bag { bottom: 106px; right: 16px; padding: 9px 12px; display: flex; flex-direction: column; gap: 5px; min-width: 132px; }
-.bag h4 { font-size: 11px; font-weight: 600; color: #c4a878; letter-spacing: .06em; text-transform: uppercase; }
-.bag .row { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; }
-.bag .row span:last-child { color: #f0cd6b; font-weight: 600; }
-.bag .empty { font-size: 12px; color: #8a7a58; }
+/* Top-right, under the coin counter -- not the bottom-right corner, which is
+   already claimed by the joystick's RUN/Interact pair and has no room to spare.
+   A single icon rather than a growing text panel, so the HUD stays uncluttered;
+   the badge gives an at-a-glance count without needing to open it. */
+.bagbtn { top: 62px; right: 14px; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.bagbtn img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
+.bagbtn .badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #f0cd6b; color: #3a2c16; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(28,22,16,.6); }
+.bagbtn .badge:empty { display: none; }
 
 .prompt { left: 50%; bottom: 92px; transform: translateX(-50%); padding: 7px 14px; font-size: 14px; white-space: nowrap; }
 .prompt kbd { display: inline-block; min-width: 20px; text-align: center; padding: 1px 5px; margin: 0 2px; border-radius: 4px; background: #f0cd6b; color: #3a2c16; font-weight: 700; font-family: inherit; font-size: 12.5px; }
@@ -44,8 +47,12 @@ html, body {
 
 .stick { position: absolute; left: 26px; bottom: 26px; width: 108px; height: 108px; border-radius: 50%; background: rgba(20,16,12,.45); border: 2px solid rgba(230,200,140,.3); touch-action: none; }
 .stick .nub { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(243,230,203,.85); border: 2px solid rgba(120,95,60,.6); }
-.runbtn { position: absolute; right: 26px; bottom: 26px; width: 66px; height: 66px; border-radius: 50%; background: rgba(20,16,12,.5); border: 2px solid rgba(230,200,140,.3); color: #f3e6cb; font-size: 12px; font-weight: 700; letter-spacing: .06em; cursor: pointer; user-select: none; }
+/* RUN and Interact sit side by side in one row, not stacked -- keeps them both
+   clear of anything above (the harvest bag used to collide with a stacked layout). */
+.runbtn { position: absolute; right: 22px; bottom: 22px; width: 50px; height: 50px; border-radius: 50%; background: rgba(20,16,12,.5); border: 2px solid rgba(230,200,140,.3); color: #f3e6cb; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; cursor: pointer; user-select: none; touch-action: none; }
 .runbtn.on { background: rgba(240,205,107,.28); border-color: #f0cd6b; }
+.actbtn { position: absolute; right: 82px; bottom: 22px; width: 50px; height: 50px; border-radius: 50%; background: rgba(240,205,107,.22); border: 2px solid #f0cd6b; color: #f3e6cb; font-size: 17px; font-weight: 700; cursor: pointer; user-select: none; touch-action: none; }
+.actbtn.on { background: rgba(240,205,107,.5); }
 
 .modal-bg { position: absolute; inset: 0; background: rgba(10,8,5,.62); display: flex; align-items: center; justify-content: center; z-index: 20; }
 .modal { width: min(620px, 92vw); max-height: 86vh; overflow-y: auto; background: #241c14; border: 1px solid rgba(230,200,140,.4); border-radius: 14px; color: #f3e6cb; }
@@ -62,27 +69,70 @@ html, body {
 .item button { background: #f0cd6b; border: none; color: #3a2c16; font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 7px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 .item button:disabled { background: #4a3f2c; color: #8a7a58; cursor: not-allowed; }
 .item button + button { margin-left: 6px; }
+.item .qty { display: block; font-size: 11.5px; color: #8fb877; margin-top: 2px; }
+/* Brief punch-and-flash on a successful purchase/sale/upgrade -- purely cosmetic
+   feedback, applied and removed by JS in itemRow(). */
+@keyframes btn-pop { 0% { transform: scale(1); } 35% { transform: scale(1.16); background: #ffe6a0; } 100% { transform: scale(1); } }
+.item button.pop { animation: btn-pop .28s ease-out; }
 .sec { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #c4a878; margin-top: 6px; }
 .hint { position: absolute; left: 14px; top: 56px; font-size: 12px; color: #c4a878; background: rgba(28,22,16,.8); padding: 6px 10px; border-radius: 7px; border: 1px solid rgba(230,200,140,.2); line-height: 1.6; }
 
 .labels { position: absolute; inset: 0; pointer-events: none; }
 .maplabel { position: absolute; left: 0; top: 0; white-space: nowrap; padding: 5px 11px; border-radius: 8px; background: rgba(24,19,13,.86); border: 1px solid rgba(230,200,140,.35); color: #f3e6cb; font-size: 13px; font-weight: 600; will-change: transform; }
 .maplabel::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; margin-left: -4px; background: rgba(24,19,13,.86); border-right: 1px solid rgba(230,200,140,.35); border-bottom: 1px solid rgba(230,200,140,.35); transform: rotate(45deg); }
-.maplabel.near { border-color: #f0cd6b; color: #ffeec0; background: rgba(52,39,18,.94); }
+.maplabel.near { border-color: #f0cd6b; color: #ffeec0; background: rgba(52,39,18,.94); cursor: pointer; pointer-events: auto; }
 .maplabel.near::after { border-color: #f0cd6b; background: rgba(52,39,18,.94); }
 .coins.inf { color: #ffeec0; }
 
 @media (max-width: 620px) {
   .hint { display: none; }
-  .hotbar { bottom: 96px; gap: 4px; padding: 5px; }
-  .slot { width: 46px; height: 46px; }
-  .slot b { font-size: 10px; }
-  .slot i { font-size: 9px; }
-  .bag { top: 62px; right: 10px; bottom: auto; min-width: 104px; padding: 6px 9px; }
+  .hotbar { bottom: 96px; gap: 3px; padding: 4px; }
+  .slot { width: 38px; height: 38px; }
+  .slot b { font-size: 8.5px; }
+  .slot i { font-size: 7.5px; }
+  .bagbtn { right: 10px; width: 38px; height: 38px; }
+  .bagbtn img { width: 24px; height: 24px; }
   .prompt { bottom: 156px; font-size: 13px; }
   .stick { width: 92px; height: 92px; left: 16px; bottom: 18px; }
   .stick .nub { width: 40px; height: 40px; margin: -20px 0 0 -20px; }
-  .runbtn { width: 58px; height: 58px; right: 16px; bottom: 18px; font-size: 11px; }
+  .runbtn { width: 44px; height: 44px; right: 14px; bottom: 18px; font-size: 9.5px; }
+  /* Same row as RUN, not stacked above it: the centred hotbar is wide enough on a
+     narrow screen to reach under a stacked button, but this whole bottom row sits
+     safely below the hotbar regardless of how far it stretches horizontally. */
+  .actbtn { width: 44px; height: 44px; right: 66px; bottom: 18px; font-size: 15px; }
   .coins { padding: 6px 11px; font-size: 15px; }
   .place { font-size: 13px; padding: 6px 11px; }
+}
+
+/* -------- scene transition -------- */
+
+.cloud-wipe {
+  position: absolute; inset: -4% -4%; z-index: 60;
+  background: url(/scene/cloud.png) center/cover; pointer-events: none;
+  transform: translateX(-108%);
+}
+
+/* -------- one-shot intro cutscene (e.g. the seed shop's first visit) -------- */
+
+.cutscene { position: absolute; inset: 0; z-index: 30; background: #0a0705; overflow: hidden; }
+.cs-image { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.cs-box {
+  position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%);
+  width: min(640px, 88vw); background: rgba(28,22,16,.94); border: 1px solid rgba(230,200,140,.4);
+  border-radius: 14px; padding: 16px 18px; display: flex; gap: 14px; align-items: flex-start;
+  cursor: pointer;
+}
+/* [hidden] and .cs-box{display:flex} are equal specificity, so without this the
+   attribute would silently lose to the author rule and the box would stay visible. */
+.cs-box[hidden] { display: none; }
+.cs-portrait { width: 60px; height: 60px; object-fit: contain; image-rendering: pixelated; flex: none; }
+.cs-speaker { display: block; font-size: 12.5px; font-weight: 700; color: #f0cd6b; letter-spacing: .03em; margin-bottom: 4px; }
+.cs-line { font-size: 15px; line-height: 1.45; color: #f3e6cb; }
+.cs-hint { left: 50%; bottom: 44px; transform: translateX(-50%); }
+
+@media (max-width: 620px) {
+  .cs-box { bottom: 78px; padding: 12px 14px; gap: 10px; }
+  .cs-portrait { width: 46px; height: 46px; }
+  .cs-line { font-size: 13.5px; }
+  .cs-hint { bottom: 30px; font-size: 12px; }
 }

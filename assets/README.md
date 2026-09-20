@@ -11,6 +11,9 @@ project root to rebuild it all; nothing here is edited by the game.
 | `sprite-sheet.png` | Ground tiles, props, 5 crops × growth stages, 9 player frames | ~60 sprites under `public/sprites/` |
 | `tool-shop-building.png` | The isolated shop building | Tool shop scene, and recoloured red for the seed shop |
 | `village-map-old.png` | An earlier village painting | Still the source for the tree sprite and the cobble ground texture |
+| `girl-seed-shop.png` | An 8-pose character turnaround sheet | Front-facing pose cut out as the seed shop's standing NPC, and as her portrait in the intro dialogue |
+| `cloud.png` | A seamless cloud-sky texture | The scene-transition wipe, copied as-is to `public/scene/cloud.png` |
+| `close-up-seed-shop.JPG` | A close-up render of the seed shop | The full-screen opening shot of the shop's first-visit intro, copied as-is to `public/scene/seedshop-closeup.jpg` |
 
 ## Not used yet
 
@@ -33,14 +36,15 @@ Intermediates written by `npm run slice`, safe to delete:
 
 - `sprite-sheet-alpha.png` — `sprite-sheet.png` with the painted checkerboard keyed out to real alpha
 - `tool-shop-alpha.png` — same treatment for the building
+- `girl-seed-shop-alpha.png` — same treatment for the seed shop NPC's turnaround sheet
 
 `public/scene/walkmask.png` is also generated: a black-and-white image of the
 village's roads, which is what the player's movement is tested against.
 
 ## The checkerboard problem
 
-`sprite-sheet.png` and `tool-shop-building.png` look like they have transparent
-backgrounds, but the grey-and-white checkerboard is **painted pixels, not alpha**.
+`sprite-sheet.png`, `tool-shop-building.png` and `girl-seed-shop.png` look like they
+have transparent backgrounds, but the grey-and-white checkerboard is **painted pixels, not alpha**.
 `tools/dealpha.mjs` flood-fills it away, including gaps fully enclosed by artwork
 such as the space between fence rails. Skipping that step welds every sprite to a
 chequered square.

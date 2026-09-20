@@ -33,7 +33,10 @@ function clearKeys() {
 export function initInput() {
   addEventListener('keydown', (e) => {
     const k = e.code.toLowerCase()
-    if (k in MOVE || k === 'keye' || k === 'space' || k === 'shiftleft' || /^digit[1-9]$/.test(k)) e.preventDefault()
+    if (
+      k in MOVE || k === 'keye' || k === 'enter' || k === 'numpadenter' ||
+      k === 'space' || k === 'shiftleft' || /^digit[1-9]$/.test(k)
+    ) e.preventDefault()
     if (!keys.has(k)) pressed.add(k)
     keys.add(k)
     lastSeen.set(k, performance.now())
@@ -71,6 +74,10 @@ export function axis(): Axis {
 }
 
 export function justPressed(code: string) { return pressed.has(code) }
+/** `E` and `Enter` (either the main key or numpad) are equivalent everywhere. */
+export function interactPressed() {
+  return pressed.has('keye') || pressed.has('enter') || pressed.has('numpadenter')
+}
 export function debugKeys() { return { keys: [...keys], pressed: [...pressed] } }
 export function endFrame() { pressed.clear() }
 export function digitPressed(): number | null {

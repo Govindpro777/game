@@ -23,6 +23,7 @@ export type Save = {
   plots: Plot[]
   resources: Resource[]
   unlimited: boolean
+  seenSeedShopIntro: boolean
   savedAt: number
 }
 
@@ -49,6 +50,7 @@ export function freshSave(): Save {
     plots: emptyPlots(),
     resources: [],
     unlimited: true,
+    seenSeedShopIntro: false,
     savedAt: Date.now(),
   }
 }

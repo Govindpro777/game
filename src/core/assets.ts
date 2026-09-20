@@ -46,13 +46,16 @@ export const SPRITES = {
   nature: ['tree_a', 'rock_a', 'rock_b'].map((n) => `/sprites/nature/${n}.png`),
   ground: ['grass', 'cobble', 'soil'].map((n) => `/sprites/ground/${n}.png`),
   decals: ['rock_a', 'rock_b', 'flower_a', 'flower_b'].map((n) => `/sprites/decal/${n}.png`),
-  scenes: ['/scene/village.png', '/scene/toolshop.png', '/scene/seedshop.png', '/scene/walkmask.png'],
+  npc: ['seedshop_girl'].map((n) => `/sprites/npc/${n}.png`),
+  scenes: [
+    '/scene/village.png', '/scene/toolshop.png', '/scene/seedshop-closeup.jpg', '/scene/walkmask.png',
+  ],
 }
 
 export const ALL = [
   ...SPRITES.player, ...SPRITES.tiles, ...SPRITES.props,
   ...SPRITES.crops, ...SPRITES.seeds, ...SPRITES.nature,
-  ...SPRITES.ground, ...SPRITES.decals, ...SPRITES.scenes,
+  ...SPRITES.ground, ...SPRITES.decals, ...SPRITES.npc, ...SPRITES.scenes,
 ]
 
 export const tile = (n: string) => img(`/sprites/tile/${n}.png`)
@@ -62,3 +65,4 @@ export const seed = (n: string) => img(`/sprites/seed/${n}.png`)
 export const nature = (n: string) => img(`/sprites/nature/${n}.png`)
 export const ground = (n: string) => img(`/sprites/ground/${n}.png`)
 export const decal = (n: string) => img(`/sprites/decal/${n}.png`)
+export const npc = (n: string) => img(`/sprites/npc/${n}.png`)

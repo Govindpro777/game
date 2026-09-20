@@ -15,12 +15,20 @@ Then open http://localhost:5173.
 |---|---|
 | `WASD` / arrows | Move |
 | `Shift` or the RUN button | Run |
-| `E` | Interact with whatever you're standing next to |
+| `E` or `Enter` | Interact with whatever you're standing next to |
 | `1`–`5` | Select hoe / watering can / axe / pickaxe / shovel |
 | `Q` | Cycle through the seeds you own |
-| `Esc` | Close a shop panel |
+| `Esc` | Close a shop panel or skip the intro cutscene |
 
-On touch devices the on-screen stick and RUN button work instead.
+A village landmark's floating label (Home, Seed shop, Tool shop, Farm) also lights up
+and becomes clickable/tappable once you're close enough — clicking it does the same
+thing as pressing `E`, which is meant for touch and mouse players who'd rather click
+the thing they want than remember a key.
+
+On touch devices the on-screen stick, `E` and RUN buttons work instead. All three are
+independent, fully-multitouch controls — each tracks its own finger by pointer id, so
+you can hold the stick to walk toward something and tap `E` (or RUN) with another
+finger without either interrupting the other.
 
 ## Display
 
@@ -40,6 +48,15 @@ Instead, browser zoom is made harmless: the canvas is sized entirely by CSS and 
 render target is re-matched to its real measured box every frame, so the game
 re-fits exactly at any zoom level with no gap or letterbox.
 
+`#app` is `position: fixed`, which pins to the *layout* viewport — but on mobile the
+*visual* viewport (what's actually on screen) can scroll or shrink independently of
+it, e.g. while the address bar animates away during a touch-drag near the screen
+edge, or a keyboard opens. A fixed element doesn't follow that on its own, so the
+game (and the character with it) can visibly drift away from the controls. `resize()`
+explicitly sizes and offsets `#app` to `window.visualViewport` on every resize/scroll
+of it, which keeps the game pinned under your thumb regardless of what the browser
+chrome is doing.
+
 ## The loop
 
 Buy seeds at the market → till a plot with the hoe → plant → water →
@@ -56,14 +73,32 @@ Progress autosaves to `localStorage`, including crop growth while the tab is clo
 purchases and upgrades succeed for free and the coin counter reads `∞`. Turn it off
 under *Testing* in the tool shop to play the real economy.
 
+The sack icon under the coin counter opens your **Inventory** — a read-only summary
+of every seed, harvested crop, tool (with level) and material you're carrying. Its
+badge shows a running total so you can tell at a glance whether you're holding
+anything without opening it. Shop screens also show how many of each seed you
+already own, right under the price, so a purchase there is never a guess.
+
 ## Scenes
 
 - **Willowbrook village** — the hub, with floating labels over each landmark that
   light up gold when you're close enough to press `E`. **You can only walk on the
-  roads** — see below.
+  roads** — see below. A shopkeeper stands permanently at the seed shop's gate —
+  purely decorative, she doesn't move or interact.
 - **Ted's tools** — buy and upgrade the five tools, sell wood and stone.
-- **Seed & produce market** — buy seeds, sell your harvest.
+- **Seed & produce market** — buy seeds, sell your harvest. Unlike the other indoor
+  scenes it isn't a procedurally-built room: it's one painted close-up image (the
+  same one used for the intro below), with the walkable plaza and solid shapes
+  (building, fountain, garden racks) carved out by hand. The first time you ever walk
+  in, a one-time intro plays first: the same close-up, then a short dialogue with the
+  shopkeeper, Mira, advanced a line at a time with `E`/`Enter` (or a tap/click on the
+  dialogue box). `Esc` skips it. It's remembered in your save and never repeats.
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
+
+Every scene change — walking into a building, leaving one, resetting your save —
+plays a brief cloud-wipe transition (`src/cutscene.ts` handles the dialogue overlay;
+the wipe itself lives in `goto()` in `src/main.ts`). It's purely cosmetic: input is
+held during the ~0.8s it takes, then resumes exactly where it left off.
 
 ## Walking the village
 
@@ -135,7 +170,6 @@ The helper scripts it orchestrates:
 - `dealpha.mjs` — flood-fills the painted checkerboard to real alpha, including
   enclosed gaps (e.g. between fence rails)
 - `blobs.mjs` — connected-component labelling to find each sprite's bounding box
-- `reroof.mjs` — recolours the tool shop's slate roof to terracotta for the seed shop
 - `cutout.mjs` — cuts trees, rocks and flowers out of painted scenes by colour
 - `annotate.mjs`, `collvis.mjs`, `reachvis.mjs`, `grid.mjs`, `sheetview.mjs` — visual
   debugging aids. `collvis.mjs` draws the village collision boxes and zones over the

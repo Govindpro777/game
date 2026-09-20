@@ -2,9 +2,14 @@
  * Rebuilds everything in public/ from the source art in assets/.
  *
  *   assets/sprite-sheet.png       -> ~60 named sprites in public/sprites/
- *   assets/tool-shop-building.png -> public/scene/toolshop.png (+ recoloured seedshop.png)
+ *   assets/tool-shop-building.png -> public/scene/toolshop.png
  *   assets/game-bg.jpeg           -> public/scene/village.png + walkmask.png (roads)
  *   assets/village-map-old.png    -> the tree sprite (cut from the old painting)
+ *   assets/girl-seed-shop.png     -> the seed shop's standing NPC
+ *   assets/cloud.png              -> public/scene/cloud.png, the scene-transition wipe
+ *   assets/close-up-seed-shop.JPG -> public/scene/seedshop-closeup.jpg -- both the intro
+ *                                    cutscene's establishing shot AND the seed shop's
+ *                                    own walkable background (see scenes.ts)
  *
  * The two Gemini sheets have their "transparent" checkerboard painted in as real
  * pixels, so every source image goes through dealpha.mjs first to recover alpha.
@@ -17,6 +22,7 @@ const GEN = 'assets/generated'
 const OUT = 'public/sprites'
 const SHEET = `${GEN}/sprite-sheet-alpha.png`
 const BUILDING = `${GEN}/tool-shop-alpha.png`
+const GIRL = `${GEN}/girl-seed-shop-alpha.png`
 
 const run = (cmd) => execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
 
@@ -49,6 +55,7 @@ const NAMES = {
 mkdirSync(GEN, { recursive: true })
 run(`node tools/dealpha.mjs "assets/sprite-sheet.png" "${SHEET}"`)
 run(`node tools/dealpha.mjs "assets/tool-shop-building.png" "${BUILDING}"`)
+run(`node tools/dealpha.mjs "assets/girl-seed-shop.png" "${GIRL}"`)
 
 /* 2. cut the named sprites out of the sheet */
 const boxes = JSON.parse(run(`node tools/blobs.mjs ${SHEET} 700`).split('\n')[0])
@@ -67,7 +74,6 @@ for (const [idx, name] of Object.entries(NAMES)) {
 /* 3. scene backgrounds */
 mkdirSync('public/scene', { recursive: true })
 await sharp(BUILDING).trim({ threshold: 1 }).png().toFile('public/scene/toolshop.png')
-run('node tools/reroof.mjs public/scene/toolshop.png public/scene/seedshop.png')
 await sharp('assets/game-bg.jpeg').png().toFile('public/scene/village.png')
 // Walkable road network, derived from the artwork's own colours (see roadmask.mjs).
 run('node tools/roadmask.mjs assets/game-bg.jpeg public/scene/walkmask.png "" 760 700')
@@ -94,6 +100,17 @@ run(`node tools/cutout.mjs ${OUT}/tile/grass_d.png 6 28 26 26 ${OUT}/decal/flowe
 await sharp(`${OUT}/nature/rock_a.png`).toFile(`${OUT}/decal/rock_a.png`)
 await sharp(`${OUT}/nature/rock_b.png`).toFile(`${OUT}/decal/rock_b.png`)
 
+/* 6. seed shop NPC: the front-facing pose (top-left of the sheet), cut to its own sprite */
+mkdirSync(`${OUT}/npc`, { recursive: true })
+const girlBoxes = JSON.parse(run(`node tools/blobs.mjs ${GIRL} 800`).split('\n')[0])
+const gb = girlBoxes[0]
+await sharp(GIRL).extract({ left: gb.x, top: gb.y, width: gb.w, height: gb.h })
+  .png().toFile(`${OUT}/npc/seedshop_girl.png`)
+
+/* 7. scene-transition and cutscene assets, used as-is */
+await sharp('assets/cloud.png').png().toFile('public/scene/cloud.png')
+await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
+
 writeFileSync(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2))
 console.log(`sliced ${n} sprites -> ${OUT}`)
-console.log('scenes, nature, ground and decals rebuilt')
+console.log('scenes, nature, ground, decals, npc and cutscene assets rebuilt')

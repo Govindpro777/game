@@ -1,10 +1,13 @@
 import { ALL, load, img, crop as cropImg, nature, ground as groundTex } from './core/assets'
-import { axis, debugKeys, digitPressed, endFrame, initInput, justPressed, stick, touchRun } from './core/input'
+import {
+  axis, debugKeys, digitPressed, endFrame, initInput, interactPressed, justPressed, stick, touchRun,
+} from './core/input'
+import { advanceCutscene, closeCutscene, isCutsceneOpen, openCutscene, type Step } from './cutscene'
 import { CROPS, CROP_IDS } from './data/crops'
 import { TOOLS, TOOL_IDS, type ToolId } from './data/tools'
 import {
   FARM_ROCKS, FARM_TREES, PLOT_COLS, PLOT_ROWS, SCENES, plotRect,
-  type Rect, type Scene,
+  type Rect, type Scene, type Zone,
 } from './scenes'
 import {
   isRipe, owns, power, save, stageOf, state, type Plot, type SceneId,
@@ -13,6 +16,9 @@ import {
   closeModal, currentSeed, initUi, modalOpen, openSeedShop, openToolShop,
   refreshHud, setMapLabels, setSeedIndex, showPrompt, toast,
 } from './ui'
+
+/** True while any full-screen overlay owns input: the shop panel or the intro cutscene. */
+const uiBusy = () => modalOpen() || isCutsceneOpen()
 
 /** The world box we try to keep on screen; zoom scales it to fit, then covers. */
 const TARGET = { w: 960, h: 600 }
@@ -47,6 +53,37 @@ function maskOf(path: string): Mask | null {
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = canvas.getContext('2d')!
+const app = document.getElementById('app') as HTMLDivElement
+
+/** Cloud-wipe overlay used between scenes; a sibling of the canvas, not part of #ui. */
+const cloud = document.createElement('div')
+cloud.className = 'cloud-wipe'
+app.append(cloud)
+
+const WIPE_MS = 420
+
+/** Animates the cloud layer from one horizontal position to another; resolves once settled. */
+function slideCloud(fromPct: number, toPct: number): Promise<void> {
+  return new Promise((resolve) => {
+    cloud.style.transition = 'none'
+    cloud.style.transform = `translateX(${fromPct}%)`
+    void cloud.offsetWidth // force reflow so the transition below actually animates
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      cloud.removeEventListener('transitionend', onEnd)
+      resolve()
+    }
+    const onEnd = (e: TransitionEvent) => { if (e.propertyName === 'transform') finish() }
+    cloud.addEventListener('transitionend', onEnd)
+    setTimeout(finish, WIPE_MS + 150) // safety net if transitionend never fires
+    requestAnimationFrame(() => {
+      cloud.style.transition = `transform ${WIPE_MS}ms ease-in-out`
+      cloud.style.transform = `translateX(${toPct}%)`
+    })
+  })
+}
 
 const player = {
   x: 0, y: 0,
@@ -70,12 +107,32 @@ const ANIM: Record<string, { idle: number; walk: number[] }> = {
 let canvasRect = { left: 0, top: 0 }
 
 /**
+ * `#app` is `position: fixed`, which pins to the *layout* viewport -- but on mobile
+ * browsers the *visual* viewport (what's actually on screen) can scroll or shrink
+ * independently of it, e.g. while the address bar animates away during a touch-drag,
+ * or a keyboard opens. When that happens a fixed element doesn't follow, so the game
+ * (player included) visibly drifts off from where the finger actually is. Explicitly
+ * sizing and offsetting `#app` to the visual viewport keeps it, and the character,
+ * pinned under the controls no matter what the browser chrome is doing.
+ */
+function pinViewport() {
+  const vv = window.visualViewport
+  if (!vv) return
+  app.style.width = `${vv.width}px`
+  app.style.height = `${vv.height}px`
+  app.style.transform = vv.offsetLeft || vv.offsetTop
+    ? `translate(${vv.offsetLeft}px, ${vv.offsetTop}px)`
+    : ''
+}
+
+/**
  * CSS sizes the canvas (it is inset:0 inside a fixed full-viewport #app); this only
  * matches the backing store to whatever was actually laid out. Reading the real rect
  * rather than innerWidth matters under browser zoom, where the viewport goes
  * fractional and a rounded pixel size leaves a hairline gap at the edge.
  */
 function resize() {
+  pinViewport()
   const r = canvas.getBoundingClientRect()
   view.w = Math.max(320, r.width)
   view.h = Math.max(240, r.height)
@@ -99,11 +156,55 @@ function ensureResources() {
   ]
 }
 
-function goto(id: SceneId) {
-  scene = SCENES[id]
-  player.x = scene.spawn.x
-  player.y = scene.spawn.y
-  closeModal()
+const GIRL_PORTRAIT = '/sprites/npc/seedshop_girl.png'
+const PLAYER_PORTRAIT = '/sprites/player/f4.png'
+
+const SEED_SHOP_INTRO: Step[] = [
+  { kind: 'image', src: '/scene/seedshop-closeup.jpg' },
+  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'Oh! A new face in Willowbrook — welcome to the seed shop!' },
+  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'I’m Mira. I grow and sell seeds for just about everything that’ll take root here.' },
+  { kind: 'line', speaker: 'You', portrait: PLAYER_PORTRAIT, text: 'Nice to meet you, Mira. I could use some seeds to get my farm started.' },
+  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'You’ve come to the right place. Carrots and wheat are easiest if you’re just starting out.' },
+  { kind: 'line', speaker: 'Mira', portrait: GIRL_PORTRAIT, text: 'Take a look at what I’ve got — step up to the counter and press E any time you want to buy or sell.' },
+]
+
+/** One-time flourishes that fire the moment a scene finishes appearing. */
+function onEnterScene(id: SceneId) {
+  if (id === 'seedshop' && !state.seenSeedShopIntro) {
+    openCutscene(SEED_SHOP_INTRO, () => {
+      state.seenSeedShopIntro = true
+      save()
+    })
+  }
+}
+
+let transitioning = false
+
+/**
+ * Swaps scenes behind a cloud wipe, like Clash of Clans' loading curtain: the cloud
+ * slides in to fully cover the screen, the scene changes while hidden, then it slides
+ * on out the other side. `instant` skips the animation for the very first scene load,
+ * where there's nothing on screen yet to hide the swap from.
+ */
+async function goto(id: SceneId, instant = false) {
+  if (transitioning) return
+  const land = () => {
+    scene = SCENES[id]
+    player.x = scene.spawn.x
+    player.y = scene.spawn.y
+    closeModal()
+  }
+  if (instant) {
+    land()
+    onEnterScene(id)
+    return
+  }
+  transitioning = true
+  await slideCloud(-108, 0)
+  land()
+  await slideCloud(0, 108)
+  transitioning = false
+  onEnterScene(id)
 }
 
 /* ---------------- collision ---------------- */
@@ -267,6 +368,26 @@ function clearAround(i: number) {
   save()
 }
 
+/** What pressing the interact key (or clicking a highlighted map label) does for a zone. */
+function zoneAction(z: Zone): Target | null {
+  if (z.to) {
+    const to = z.to
+    return { text: `enter ${SCENES[to].name}`, press: true, act: () => goto(to) }
+  }
+  if (z.id === 'counter') {
+    const isTools = scene.id === 'toolshop'
+    return {
+      text: isTools ? 'browse tools' : 'browse seeds & sell crops',
+      press: true,
+      act: () => (isTools ? openToolShop(update) : openSeedShop(update)),
+    }
+  }
+  if (z.id === 'home') {
+    return { text: 'rest at home (saves progress)', press: true, act: () => { save(); toast('Progress saved') } }
+  }
+  return null
+}
+
 function findTarget(): Target | null {
   let best: Target | null = null
   let bestD = REACH
@@ -276,20 +397,10 @@ function findTarget(): Target | null {
     const cy = z.y + z.h / 2
     const d = dist(cx, cy)
     if (d > Math.max(z.w, z.h) / 2 + 56 || d > bestD) continue
+    const a = zoneAction(z)
+    if (!a) continue
     bestD = d
-    if (z.to) {
-      const to = z.to
-      best = { text: `enter ${SCENES[to].name}`, press: true, act: () => goto(to) }
-    } else if (z.id === 'counter') {
-      const isTools = scene.id === 'toolshop'
-      best = {
-        text: isTools ? 'browse tools' : 'browse seeds & sell crops',
-        press: true,
-        act: () => (isTools ? openToolShop(update) : openSeedShop(update)),
-      }
-    } else if (z.id === 'home') {
-      best = { text: 'rest at home (saves progress)', press: true, act: () => { save(); toast('Progress saved') } }
-    }
+    best = a
   }
 
   if (scene.id === 'farm') {
@@ -477,7 +588,7 @@ function drawScene() {
   for (const d of scene.decor) {
     const w = d.src.width * d.s
     const h = d.src.height * d.s
-    items.push({ y: d.y + h, draw: () => ctx.drawImage(d.src, d.x, d.y, w, h) })
+    items.push({ y: d.sortY ?? d.y + h, draw: () => ctx.drawImage(d.src, d.x, d.y, w, h) })
   }
 
   items.push({ y: player.y, draw: drawPlayer })
@@ -530,13 +641,18 @@ function updateLabels() {
   const { left, top } = canvasRect
   const k = view.zoom
   setMapLabels(
-    scene.zones.map((z) => ({
-      id: z.id,
-      text: z.label,
-      x: left + ((z.lx ?? z.x + z.w / 2) - camX) * k,
-      y: top + ((z.ly ?? z.y) - camY) * k - 10,
-      near: dist(z.x + z.w / 2, z.y + z.h / 2) < REACH,
-    })),
+    scene.zones.map((z) => {
+      const near = dist(z.x + z.w / 2, z.y + z.h / 2) < REACH
+      return {
+        id: z.id,
+        text: z.label,
+        x: left + ((z.lx ?? z.x + z.w / 2) - camX) * k,
+        y: top + ((z.ly ?? z.y) - camY) * k - 10,
+        near,
+        // Only wired up while highlighted, so a distant label can't be tapped from afar.
+        onClick: near && !uiBusy() && !transitioning ? () => zoneAction(z)?.act() : undefined,
+      }
+    }),
   )
 }
 
@@ -546,14 +662,17 @@ function frame(now: number) {
   last = now
   const dt = dtMs / 1000
 
-  if (!modalOpen()) {
+  if (isCutsceneOpen()) {
+    if (interactPressed()) advanceCutscene()
+    else if (justPressed('escape')) closeCutscene()
+  } else if (!modalOpen() && !transitioning) {
     move(dt)
     const d = digitPressed()
     if (d && d <= TOOL_IDS.length) selectTool(TOOL_IDS[d - 1])
     if (justPressed('keyq')) cycleSeed()
     target = findTarget()
-    if (justPressed('keye') && target) target.act()
-  } else if (justPressed('escape')) {
+    if (interactPressed() && target) target.act()
+  } else if (modalOpen() && justPressed('escape')) {
     closeModal()
   }
 
@@ -561,8 +680,8 @@ function frame(now: number) {
   drawScene()
   updateLabels()
   showPrompt(
-    modalOpen() || !target ? null
-      : target.press ? `Press <kbd>E</kbd> to ${target.text}` : target.text,
+    uiBusy() || transitioning || !target ? null
+      : target.press ? `Press <kbd>Enter</kbd> to ${target.text}` : target.text,
   )
   refreshHud(scene.name)
   endFrame()
@@ -595,8 +714,14 @@ function buildTouch() {
   const run = document.createElement('button')
   run.className = 'runbtn'
   run.textContent = 'RUN'
-  ui.append(pad, run)
+  const act = document.createElement('button')
+  act.className = 'actbtn'
+  act.textContent = 'E'
+  ui.append(pad, run, act)
 
+  // Each control tracks its own pointer id, so the joystick, RUN and Interact are
+  // fully independent -- holding the stick with one finger never blocks a tap on
+  // either button with another, and vice versa.
   let id: number | null = null
   const R = 40
   const set = (e: PointerEvent) => {
@@ -620,6 +745,24 @@ function buildTouch() {
 
   const toggle = () => { touchRun.on = !touchRun.on; run.classList.toggle('on', touchRun.on) }
   run.addEventListener('click', toggle)
+
+  // Interact re-fires the real 'E' key rather than calling into the interaction
+  // system directly, so touch gets exactly the same behaviour (and any future
+  // change to it) as the keyboard for free, with no separate code path to drift.
+  const press = (e: PointerEvent) => {
+    e.preventDefault()
+    act.classList.add('on')
+    dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' }))
+  }
+  const release = (e: PointerEvent) => {
+    e.preventDefault()
+    act.classList.remove('on')
+    dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }))
+  }
+  act.addEventListener('pointerdown', press)
+  act.addEventListener('pointerup', release)
+  act.addEventListener('pointercancel', release)
+  act.addEventListener('pointerleave', release)
 }
 
 /** Stops the browser treating the game as a scrollable, zoomable document. */
@@ -677,7 +820,7 @@ async function boot() {
   await load(ALL)
   ensureResources()
   if (state.plots.length !== PLOT_COLS * PLOT_ROWS) state.plots.length = PLOT_COLS * PLOT_ROWS
-  goto('world')
+  goto('world', true)
   setSeedIndex(0)
   document.getElementById('boot')!.classList.add('hidden')
   if (import.meta.env.DEV) {
