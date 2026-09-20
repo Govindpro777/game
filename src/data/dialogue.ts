@@ -29,8 +29,8 @@ export type DialogueNode = {
 
 export type DialogueScript = Record<string, DialogueNode>
 
-export const SPEAKERS: Record<Speaker, { name: string; portrait: string }> = {
-  faye: { name: 'Faye', portrait: '/portrait/faye.png' },
+export const SPEAKERS: Record<Speaker, { name: string; role?: string; portrait: string }> = {
+  faye: { name: 'Faye', role: 'Seed Shop Owner', portrait: '/portrait/faye.png' },
   bao: { name: 'Bao', portrait: '/portrait/bao.png' },
 }
 

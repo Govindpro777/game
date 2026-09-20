@@ -158,9 +158,10 @@ function ensureResources() {
 }
 
 /**
- * Faye greets the player just inside the shop: a one-time introduction on the very
- * first visit, and a short branching chat every time after. Declining her at the
- * door ('leave') walks the player back out to the village.
+ * Faye greets the player once they walk right up to her -- not the moment the scene
+ * loads (see `nearFaye` in frame()). A one-time introduction on the very first visit,
+ * a short branching chat every time after. Declining her at the door ('leave') walks
+ * the player back out to the village.
  */
 function talkToFaye() {
   const first = !state.seenSeedShopIntro
@@ -172,6 +173,13 @@ function talkToFaye() {
     if (outcome === 'leave') goto('world')
   })
 }
+
+/** Faye's approximate position in the seedshop scene -- see her `decor` entry in scenes.ts. */
+const FAYE_POS = { x: 430, y: 470 }
+const FAYE_RADIUS = 90
+/** True while the player is already inside Faye's radius, so walking up to her only
+ * fires the chat once per approach instead of every frame she stays in range. */
+let nearFaye = false
 
 let transitioning = false
 
@@ -188,10 +196,10 @@ async function goto(id: SceneId, instant = false) {
     player.x = scene.spawn.x
     player.y = scene.spawn.y
     closeModal()
+    nearFaye = false
   }
   if (instant) {
     land()
-    if (id === 'seedshop') talkToFaye()
     return
   }
   transitioning = true
@@ -199,7 +207,6 @@ async function goto(id: SceneId, instant = false) {
   land()
   await slideCloud(0, 108)
   transitioning = false
-  if (id === 'seedshop') talkToFaye()
 }
 
 /* ---------------- collision ---------------- */
@@ -669,6 +676,11 @@ function frame(now: number) {
     if (justPressed('keyq')) cycleSeed()
     target = findTarget()
     if (interactPressed() && target) target.act()
+    if (scene.id === 'seedshop') {
+      const closeToFaye = dist(FAYE_POS.x, FAYE_POS.y) < FAYE_RADIUS
+      if (closeToFaye && !nearFaye) talkToFaye()
+      nearFaye = closeToFaye
+    }
   } else if (modalOpen() && justPressed('escape')) {
     closeModal()
   }

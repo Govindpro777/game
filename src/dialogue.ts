@@ -20,7 +20,7 @@ el.innerHTML = `
           <path d="M20 4c0 9-6 14-12 14-2 0-4-1-4-1s1-9 8-11c3-1 8-2 8-2z" fill="#7cb342"/>
           <path d="M4 20c4-6 8-9 13-12" stroke="#4a7c1f" stroke-width="1.6" fill="none" stroke-linecap="round"/>
         </svg>
-        <span class="dlg-name"></span>
+        <span class="dlg-names"><span class="dlg-role"></span><span class="dlg-name"></span></span>
       </div>
       <p class="dlg-line"></p>
       <div class="dlg-choices" hidden></div>
@@ -34,6 +34,7 @@ const box = el.querySelector('.dlg-box') as HTMLDivElement
 const portraitEl = el.querySelector('.dlg-portrait') as HTMLImageElement
 const plate = el.querySelector('.dlg-plate') as HTMLDivElement
 const nameEl = el.querySelector('.dlg-name') as HTMLElement
+const roleEl = el.querySelector('.dlg-role') as HTMLElement
 const lineEl = el.querySelector('.dlg-line') as HTMLElement
 const choicesEl = el.querySelector('.dlg-choices') as HTMLDivElement
 const nextEl = el.querySelector('.dlg-next') as HTMLElement
@@ -55,6 +56,8 @@ function render() {
     portraitEl.src = s.portrait
     portraitEl.hidden = false
     nameEl.textContent = s.name
+    roleEl.textContent = s.role ?? ''
+    roleEl.hidden = !s.role
     plate.hidden = false
     box.classList.remove('narration')
   } else {

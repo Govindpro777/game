@@ -119,12 +119,16 @@ html, body {
 #ui > .dlg { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; pointer-events: none; padding: 0 16px 18px; }
 #ui.dialogue .hotbar { display: none; }
 
+/* Every size below is clamp(min, scale-with-viewport, max) so the whole box scales
+   smoothly with the window instead of jumping at one breakpoint. */
 .dlg-box {
   pointer-events: auto; position: relative; cursor: pointer;
-  width: min(1080px, 100%); margin: 0 auto; min-height: 124px;
-  display: flex; align-items: center; gap: 20px; padding: 20px 26px 20px 22px;
+  width: min(1080px, 100%); margin: 0 auto;
+  display: flex; align-items: flex-start;
+  gap: clamp(8px, 1.6vw, 14px);
+  padding: clamp(8px, 1.4vw, 12px) clamp(26px, 4.2vw, 40px) clamp(8px, 1.4vw, 12px) clamp(8px, 1.4vw, 14px);
   background: linear-gradient(#f7ecd5, #ead8b4);
-  border: 5px solid #b98a45; border-radius: 16px;
+  border: clamp(3px, 0.55vw, 5px) solid #b98a45; border-radius: clamp(10px, 1.6vw, 16px);
   box-shadow: 0 0 0 3px #4a3117, 0 14px 34px rgba(0,0,0,.45);
 }
 /* Thin inner rule, the way the reference art frames its parchment. */
@@ -134,52 +138,49 @@ html, body {
 }
 
 .dlg-portrait {
-  flex: none; width: 118px; margin: 0; display: block;
+  flex: none; width: clamp(64px, 9vw, 115px); margin: 0; display: block;
   filter: drop-shadow(0 6px 12px rgba(0,0,0,.45));
 }
 .dlg-portrait[hidden] { display: none; }
 
-
 .dlg-plate {
   align-self: flex-start;
-  display: inline-flex; align-items: center; gap: 8px;
-  margin-bottom: 10px; padding: 6px 18px 7px;
+  display: inline-flex; align-items: center; gap: clamp(4px, 0.7vw, 6px);
+  margin-bottom: clamp(3px, 0.6vw, 5px);
+  padding: clamp(2px, 0.4vw, 3px) clamp(9px, 1.5vw, 12px) clamp(3px, 0.5vw, 4px);
   background: linear-gradient(#5d3e1c, #432a11);
-  border: 2px solid #b98a45; border-radius: 10px;
+  border: 2px solid #b98a45; border-radius: 8px;
   box-shadow: 0 3px 8px rgba(0,0,0,.4);
 }
 .dlg-plate[hidden] { display: none; }
-.dlg-leaf { width: 17px; height: 17px; flex: none; }
-.dlg-name { font-size: 18px; font-weight: 700; color: #f6e7c4; letter-spacing: .02em; white-space: nowrap; }
+.dlg-leaf { width: clamp(18px, 2vw, 22px); height: clamp(13px, 2vw, 17px); flex: none; }
+.dlg-names { display: flex; flex-direction: column; line-height: 1.1; }
+.dlg-role { font-size: clamp(8px, 1.05vw, 9.5px); font-weight: 600; color: #c9ad78; letter-spacing: .03em; text-transform: uppercase; }
+.dlg-role[hidden] { display: none; }
+/* Bumped up from the plain name-plate look -- the reference reads more confidently. */
+.dlg-name { font-size: clamp(14px, 2.3vw, 18.5px); font-weight: 700; color: #f6e7c4; letter-spacing: .02em; white-space: nowrap; }
 
 .dlg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.dlg-line { font-size: 21px; line-height: 1.42; color: #3f2b14; font-weight: 600; }
+.dlg-line { font-size: clamp(13px, 2vw, 16.5px); line-height: 1.35; color: #3f2b14; font-weight: 600; }
 .narration .dlg-line { text-align: center; font-style: italic; color: #5a441f; }
 
-.dlg-choices { display: flex; gap: 12px; margin-top: 14px; }
+.dlg-choices { display: flex; gap: clamp(7px, 1.1vw, 10px); margin-top: clamp(6px, 1vw, 9px); }
 .dlg-choices[hidden] { display: none; }
 .narration .dlg-choices { justify-content: center; }
+/* Smaller than before -- Yes/No don't need to compete with the dialogue text. */
 .dlg-choice {
-  font-family: inherit; font-size: 17px; font-weight: 700; color: #3f2b14; cursor: pointer;
-  min-width: 96px; padding: 8px 20px; border-radius: 9px;
+  font-family: inherit; font-size: clamp(12px, 1.5vw, 13.5px); font-weight: 700; color: #3f2b14; cursor: pointer;
+  min-width: clamp(56px, 8vw, 76px); padding: clamp(5px, 0.8vw, 6px) clamp(12px, 1.8vw, 15px);
+  border-radius: 7px;
   background: linear-gradient(#fdf4e2, #ecd9b4); border: 2px solid #b98a45;
   box-shadow: 0 2px 0 rgba(90,60,24,.35);
 }
 .dlg-choice.on { background: linear-gradient(#ffdd94, #f0c368); border-color: #6b4a1e; box-shadow: 0 0 0 2px rgba(107,74,30,.35), 0 2px 0 rgba(90,60,24,.35); }
 
-.dlg-next { position: absolute; right: 16px; bottom: 10px; font-size: 17px; color: #6b4a1e; animation: dlg-bob 1s ease-in-out infinite; }
+.dlg-next { position: absolute; right: clamp(8px, 1.2vw, 14px); bottom: 50%; transform: translateY(50%); font-size: clamp(12px, 1.4vw, 15px); color: #6b4a1e; animation: dlg-bob 1s ease-in-out infinite; }
 .dlg-next[hidden] { display: none; }
-@keyframes dlg-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@keyframes dlg-bob { 0%, 100% { transform: translateY(50%); } 50% { transform: translateY(calc(50% + 4px)); } }
 
 @media (max-width: 620px) {
   .dlg { padding: 0 8px 10px; }
-  .dlg-box { min-height: 96px; gap: 12px; padding: 14px 16px 14px 12px; border-width: 4px; border-radius: 12px; }
-    .dlg-portrait { width: 74px; margin: 0; }
-  .dlg-plate { margin-bottom: 7px; padding: 4px 12px 5px; gap: 6px; }
-  .dlg-leaf { width: 13px; height: 13px; }
-  .dlg-name { font-size: 14px; }
-  .dlg-line { font-size: 15px; line-height: 1.38; }
-  .dlg-choices { gap: 8px; margin-top: 10px; }
-  .dlg-choice { font-size: 14px; min-width: 72px; padding: 6px 14px; }
-  .dlg-next { font-size: 14px; right: 10px; bottom: 6px; }
 }

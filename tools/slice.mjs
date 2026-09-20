@@ -5,7 +5,8 @@
  *   assets/tool-shop-building.png -> public/scene/toolshop.png
  *   assets/game-bg.jpeg           -> public/scene/village.png + walkmask.png (roads)
  *   assets/village-map-old.png    -> the tree sprite (cut from the old painting)
- *   assets/girl-seed-shop.png     -> the seed shop's standing NPC
+ *   assets/seed-shop-girl.png     -> the seed shop's standing NPC (a 5x2 turnaround
+ *                                    sheet; column 4, row 0's 3/4 pose, mirrored to face left)
  *   assets/girl-profile.png       -> public/portrait/faye.png, her dialogue portrait
  *   assets/boy-profile.png        -> public/portrait/bao.png, the player's dialogue portrait
  *   assets/cloud.png              -> public/scene/cloud.png, the scene-transition wipe
@@ -24,7 +25,6 @@ const GEN = 'assets/generated'
 const OUT = 'public/sprites'
 const SHEET = `${GEN}/sprite-sheet-alpha.png`
 const BUILDING = `${GEN}/tool-shop-alpha.png`
-const GIRL = `${GEN}/girl-seed-shop-alpha.png`
 
 const run = (cmd) => execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
 
@@ -57,7 +57,6 @@ const NAMES = {
 mkdirSync(GEN, { recursive: true })
 run(`node tools/dealpha.mjs "assets/sprite-sheet.png" "${SHEET}"`)
 run(`node tools/dealpha.mjs "assets/tool-shop-building.png" "${BUILDING}"`)
-run(`node tools/dealpha.mjs "assets/girl-seed-shop.png" "${GIRL}"`)
 
 /* 2. cut the named sprites out of the sheet */
 const boxes = JSON.parse(run(`node tools/blobs.mjs ${SHEET} 700`).split('\n')[0])
@@ -102,12 +101,23 @@ run(`node tools/cutout.mjs ${OUT}/tile/grass_d.png 6 28 26 26 ${OUT}/decal/flowe
 await sharp(`${OUT}/nature/rock_a.png`).toFile(`${OUT}/decal/rock_a.png`)
 await sharp(`${OUT}/nature/rock_b.png`).toFile(`${OUT}/decal/rock_b.png`)
 
-/* 6. seed shop NPC: the front-facing pose (top-left of the sheet), cut to its own sprite */
+/* 6. seed shop NPC: a 3/4 pose, mirrored to face left (the sheet has real alpha
+   already, no checkerboard to key out), trimmed to the sprite's own bounds */
 mkdirSync(`${OUT}/npc`, { recursive: true })
-const girlBoxes = JSON.parse(run(`node tools/blobs.mjs ${GIRL} 800`).split('\n')[0])
-const gb = girlBoxes[0]
-await sharp(GIRL).extract({ left: gb.x, top: gb.y, width: gb.w, height: gb.h })
-  .png().toFile(`${OUT}/npc/seedshop_girl.png`)
+{
+  const GIRL_SHEET = 'assets/seed-shop-girl.png'
+  const { width: SW } = await sharp(GIRL_SHEET).metadata()
+  const cw = SW / 5
+  // NOT a clean 50/50 split: row 0's standing poses (boots included) run to about
+  // y=557, and row 1's walking poses start around y=598 -- cutting at height/2 (512)
+  // sliced the boots off mid-calf. 580 sits in the gap between the two rows.
+  const ROW0_H = 580
+  const cell = await sharp(GIRL_SHEET)
+    .extract({ left: Math.round(cw * 4), top: 0, width: Math.round(cw), height: ROW0_H })
+    .flop() // mirror horizontally: sheet pose faces right, so this faces left instead
+    .png().toBuffer()
+  await sharp(cell).trim({ threshold: 10 }).toFile(`${OUT}/npc/seedshop_girl.png`)
+}
 
 /* 7. dialogue portraits: already painted inside ornate frames, so they go in whole,
    just downscaled to roughly 3x their on-screen size */

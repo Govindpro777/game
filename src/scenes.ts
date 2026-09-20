@@ -388,7 +388,7 @@ const seedshop: Scene = {
   h: SEEDSHOP_H,
   cache: true,
   playerScale: 0.62,
-  spawn: { x: 330, y: 510 }, // in front of Mira, with breathing room between them
+  spawn: { x: 160, y: 550 }, // out on the open plaza -- walking up to Faye is what starts the chat
   ground: (c) =>
     c.drawImage(
       img("/scene/seedshop-closeup.jpg"),
