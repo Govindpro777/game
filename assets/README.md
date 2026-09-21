@@ -8,7 +8,7 @@ project root to rebuild it all; nothing here is edited by the game.
 | File | What it is | Where it ends up |
 |---|---|---|
 | `game-bg.jpeg` | The village map, 1575×998 | World background, plus the road mask the player walks on |
-| `sprite-sheet.png` | Ground tiles, props, 5 crops × growth stages, 9 player frames | ~60 sprites under `public/sprites/` |
+| `sprite-sheet.png` | Ground tiles, props, 5 crops × growth stages | ~50 sprites under `public/sprites/` (no longer the player -- see `main-character.png`) |
 | `tool-shop-building.png` | The isolated shop building | Tool shop scene, and recoloured red for the seed shop |
 | `village-map-old.png` | An earlier village painting | Still the source for the tree sprite and the cobble ground texture |
 | `seed-shop-girl.png` | A 5x2 character turnaround sheet | The 3/4 pose (col 4, row 0), mirrored to face left, cut out as the seed shop's standing NPC |
@@ -17,6 +17,7 @@ project root to rebuild it all; nothing here is edited by the game.
 | `close-up-seed-shop.JPG` | An outdoor close-up of the shop's front | `seedshop` scene's walkable background (the plaza players land in first), copied as-is to `public/scene/seedshop-closeup.jpg` |
 | `girl-profile.png` | Faye's portrait, painted inside an ornate frame | Her conversation portrait, downscaled to `public/portrait/faye.png` |
 | `boy-profile.png` | Bao's portrait, framed to match | The player's conversation portrait, downscaled to `public/portrait/bao.png` |
+| `main-character.png` | A 9-frame side-view walk cycle, 2170×725 | Sliced left to right into `public/sprites/player/f0..f8.png` -- the player's only sprite, every direction |
 
 ## Not used yet
 
@@ -39,13 +40,14 @@ Intermediates written by `npm run slice`, safe to delete:
 
 - `sprite-sheet-alpha.png` — `sprite-sheet.png` with the painted checkerboard keyed out to real alpha
 - `tool-shop-alpha.png` — same treatment for the building
+- `main-character-alpha.png` — same treatment for the walk-cycle sheet
 
 `public/scene/walkmask.png` is also generated: a black-and-white image of the
 village's roads, which is what the player's movement is tested against.
 
 ## The checkerboard problem
 
-`sprite-sheet.png` and `tool-shop-building.png` look like they
+`sprite-sheet.png`, `tool-shop-building.png` and `main-character.png` look like they
 have transparent backgrounds, but the grey-and-white checkerboard is **painted pixels, not alpha**.
 (`seed-shop-girl.png` has real alpha already and skips this step.)
 `tools/dealpha.mjs` flood-fills it away, including gaps fully enclosed by artwork

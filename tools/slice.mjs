@@ -18,6 +18,10 @@
  *                                    Faye is baked into this art too (see scenes.ts)
  *   assets/leaf.png               -> public/icon/leaf.png, the little leaf icon used
  *                                    on Faye's dialogue name-plate
+ *   assets/main-character.png    -> the player's 9 walk-cycle frames (a single side-view
+ *                                    walk cycle, sliced left to right into player/f0..f8,
+ *                                    replacing the old sheet's front/back/side frames --
+ *                                    see the last step)
  *
  * The two Gemini sheets have their "transparent" checkerboard painted in as real
  * pixels, so every source image goes through dealpha.mjs first to recover alpha.
@@ -54,8 +58,8 @@ const NAMES = {
   47: 'crop/corn_1', 43: 'crop/corn_2', 40: 'crop/corn_3',
   38: 'seed/carrot', 37: 'seed/wheat', 46: 'seed/tomato',
   44: 'seed/pumpkin', 42: 'seed/corn',
-  55: 'player/f0', 56: 'player/f1', 53: 'player/f2', 52: 'player/f3',
-  54: 'player/f4', 57: 'player/f5', 58: 'player/f6', 59: 'player/f7', 60: 'player/f8',
+  // Player frames (55, 56, 53, 52, 54, 57, 58, 59, 60) no longer come from this
+  // sheet -- see step 6, which slices them from main-character.png instead.
 }
 
 /* 1. recover real alpha from the painted checkerboards */
@@ -139,6 +143,74 @@ await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/
 /* 9. small UI icons, used as-is */
 mkdirSync('public/icon', { recursive: true })
 await sharp('assets/leaf.png').resize({ width: 64 }).png({ compressionLevel: 9 }).toFile('public/icon/leaf.png')
+
+/* 10. player walk-cycle frames: one side-view walk cycle, 9 frames in a single row.
+   Same painted checkerboard as the other Gemini sheets, so it goes through dealpha
+   first; blobs.mjs finds the 9 frames but sorts top-to-bottom then left-to-right,
+   and the character bobs a few pixels vertically across the cycle, so its result
+   has to be re-sorted by x alone to land back in left-to-right (f0..f8) order. */
+{
+  mkdirSync(`${OUT}/player`, { recursive: true })
+  const CHAR_SRC = 'assets/main-character.png'
+  const CHAR_SHEET = `${GEN}/main-character-alpha.png`
+  run(`node tools/dealpha.mjs "${CHAR_SRC}" "${CHAR_SHEET}"`)
+
+  const frames = JSON.parse(run(`node tools/blobs.mjs ${CHAR_SHEET} 800`).split('\n')[0])
+  frames.sort((a, b) => a.x - b.x)
+  if (frames.length !== 9) console.warn(`expected 9 player frames, found ${frames.length}`)
+
+  // dealpha's flood-fill has one false positive on this sheet: on at least one frame a
+  // small white eye catchlight sits close enough to the checkerboard's colour that the
+  // fill ate it, punching a transparent hole inside the (otherwise solid) face and
+  // melting the eye into the hair shadow above it. Rather than hand-pick that one spot,
+  // every frame gets scanned for the same shape of defect: a patch of near-transparent
+  // pixels fully enclosed by opaque ones, which can only be a false-positive bite out of
+  // the character (the real transparent background is one connected region reaching the
+  // frame's own edge). Anywhere that turns up, the original fully-opaque source pixels
+  // go back in -- restoring exactly what the checkerboard-keying should have left alone.
+  const [rawDealpha, rawSrc] = await Promise.all([
+    sharp(CHAR_SHEET).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+    sharp(CHAR_SRC).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+  ])
+  const { data: dea, info } = rawDealpha
+  const { data: src } = rawSrc
+  const W = info.width, C = info.channels
+  let holesPatched = 0
+  for (const b of frames) {
+    const PAD = 3 // a hair past the frame's own box, so a hole touching its edge still reads as "reaches outside"
+    const x0 = Math.max(0, b.x - PAD), y0 = Math.max(0, b.y - PAD)
+    const x1 = Math.min(info.width, b.x + b.w + PAD), y1 = Math.min(info.height, b.y + b.h + PAD)
+    const bw = x1 - x0, bh = y1 - y0
+    const outside = new Uint8Array(bw * bh) // reached from the box border while transparent
+    const isBg = (x, y) => dea[(y * W + x) * C + 3] <= 24
+    const stack = []
+    for (let x = 0; x < bw; x++) { stack.push(x, 0); stack.push(x, bh - 1) }
+    for (let y = 0; y < bh; y++) { stack.push(0, y); stack.push(bw - 1, y) }
+    while (stack.length) {
+      const ly = stack.pop(), lx = stack.pop()
+      if (lx < 0 || ly < 0 || lx >= bw || ly >= bh) continue
+      const li = ly * bw + lx
+      if (outside[li]) continue
+      if (!isBg(x0 + lx, y0 + ly)) continue
+      outside[li] = 1
+      stack.push(lx + 1, ly, lx - 1, ly, lx, ly + 1, lx, ly - 1)
+    }
+    for (let ly = 0; ly < bh; ly++) for (let lx = 0; lx < bw; lx++) {
+      const gx = x0 + lx, gy = y0 + ly
+      if (!isBg(gx, gy) || outside[ly * bw + lx]) continue
+      const gi = (gy * W + gx) * C
+      dea[gi] = src[gi]; dea[gi + 1] = src[gi + 1]; dea[gi + 2] = src[gi + 2]; dea[gi + 3] = 255
+      holesPatched++
+    }
+  }
+  if (holesPatched) console.log(`patched ${holesPatched} dealpha false-positive pixel(s) on the player sheet`)
+  const fixedSheet = await sharp(dea, { raw: { width: info.width, height: info.height, channels: C } }).png().toBuffer()
+
+  for (const [i, b] of frames.entries()) {
+    await sharp(fixedSheet).extract({ left: b.x, top: b.y, width: b.w, height: b.h })
+      .png({ compressionLevel: 9 }).toFile(`${OUT}/player/f${i}.png`)
+  }
+}
 
 writeFileSync(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2))
 console.log(`sliced ${n} sprites -> ${OUT}`)

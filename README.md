@@ -211,9 +211,10 @@ The helper scripts it orchestrates:
 
 ## Known gaps
 
-- **No back-view player sprite.** The source sheet has five front-facing frames
-  and four right-profile frames; there is no view from behind. Walking "up"
-  reuses the three-quarter frames, so the character faces the camera.
+- **The player only has a side-view walk cycle.** `main-character.png` is 9 frames
+  of one side-view walk cycle, with no distinct front or back pose. Walking up or
+  down reuses the same side frames as walking sideways, so the character is always
+  shown in profile regardless of which way they're actually facing.
 - **The seed shop is the tool shop with a recoloured roof.** There is only one
   building asset.
 - Ground grass is generated procedurally from the sheet's own palette, because
