@@ -97,10 +97,21 @@ let scene: Scene = SCENES.world
 let camX = 0
 let camY = 0
 
+/**
+ * Frame indices into player/f0..f8. **Every frame listed here has to face the same
+ * way**, because facing is done by mirroring the whole sprite (see drawPlayer): mixing
+ * a right-facing frame into a cycle of left-facing ones makes the character visibly
+ * snap round backwards for that frame and back again, over and over, while the player
+ * holds a single direction. On this sheet f0-f5 face right and f6-f8 face left, so
+ * these are all drawn from the f0-f5 half and mirrored when walking left.
+ *
+ * The walk cycles alternate a stride frame with a feet-together one so the step reads
+ * clearly at the size the sprite is actually drawn.
+ */
 const ANIM: Record<string, { idle: number; walk: number[] }> = {
   down: { idle: 4, walk: [3, 4, 0, 4] },
   up: { idle: 1, walk: [1, 2, 1, 2] },
-  side: { idle: 8, walk: [5, 6, 7, 8] },
+  side: { idle: 0, walk: [5, 4, 2, 0] },
 }
 
 /* ---------------- setup ---------------- */
@@ -628,8 +639,8 @@ function drawPlayer() {
   ctx.restore()
 
   ctx.save()
-  // The side-view frames face left natively, so only 'right' needs a mirror.
-  if (player.face === 'right') {
+  // The frames ANIM draws from all face right natively, so only 'left' needs a mirror.
+  if (player.face === 'left') {
     ctx.translate(player.x, 0)
     ctx.scale(-1, 1)
     ctx.drawImage(sp, -w / 2, player.y - h, w, h)
