@@ -9,7 +9,6 @@
  *                                    sheet; column 4, row 0's 3/4 pose, mirrored to face left)
  *   assets/girl-profile.png       -> public/portrait/faye.png, her dialogue portrait
  *   assets/boy-profile.png        -> public/portrait/bao.png, the player's dialogue portrait
- *   assets/cloud.png              -> public/scene/cloud.png, the scene-transition wipe
  *   assets/close-up-seed-shop.JPG -> public/scene/seedshop-closeup.jpg, the outdoor plaza
  *                                    the player walks into first; talking to Faye there
  *                                    is what leads inside
@@ -135,8 +134,8 @@ for (const [src, name] of [['assets/girl-profile.png', 'faye'], ['assets/boy-pro
   await sharp(src).resize({ width: 400 }).png({ compressionLevel: 9 }).toFile(`public/portrait/${name}.png`)
 }
 
-/* 8. scene-transition asset and the seed shop's two scenes, all used as-is */
-await sharp('assets/cloud.png').png().toFile('public/scene/cloud.png')
+/* 8. the seed shop's two scenes, used as-is (the scene transition is a pure-CSS
+   fade now, so there's no wipe texture to copy) */
 await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
 await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/scene/seedshop-interior.png')
 

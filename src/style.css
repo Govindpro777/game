@@ -106,11 +106,16 @@ html, body {
 
 /* -------- scene transition -------- */
 
-.cloud-wipe {
-  position: absolute; inset: -4% -4%; z-index: 60;
-  background: url(/scene/cloud.png) center/cover; pointer-events: none;
-  transform: translateX(-108%);
+/* The whole transition is this one fade: main.ts only toggles `.on`, the timing and
+   easing live here. Duration is mirrored by FADE_MS in main.ts, which waits on the
+   real `transitionend` -- keep the two in step if you retime it. */
+.fade-wipe {
+  position: absolute; inset: 0; z-index: 60; pointer-events: none;
+  background: #0b0906;
+  opacity: 0;
+  transition: opacity 260ms ease-in-out;
 }
+.fade-wipe.on { opacity: 1; }
 
 /* -------- conversation overlay (Faye at the seed shop door) -------- */
 

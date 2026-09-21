@@ -56,33 +56,32 @@ const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = canvas.getContext('2d')!
 const app = document.getElementById('app') as HTMLDivElement
 
-/** Cloud-wipe overlay used between scenes; a sibling of the canvas, not part of #ui. */
-const cloud = document.createElement('div')
-cloud.className = 'cloud-wipe'
-app.append(cloud)
+/** Fade-to-black curtain drawn between scenes; a sibling of the canvas, not part of #ui. */
+const curtain = document.createElement('div')
+curtain.className = 'fade-wipe'
+app.append(curtain)
 
-const WIPE_MS = 420
+/** Must match the transition duration on `.fade-wipe` in style.css. */
+const FADE_MS = 260
 
-/** Animates the cloud layer from one horizontal position to another; resolves once settled. */
-function slideCloud(fromPct: number, toPct: number): Promise<void> {
+/**
+ * Darkens the screen (`on`) or lifts the curtain again, resolving once the CSS
+ * transition has actually finished. The animation itself lives entirely in the
+ * stylesheet -- this only flips the class that drives it.
+ */
+function fade(on: boolean): Promise<void> {
   return new Promise((resolve) => {
-    cloud.style.transition = 'none'
-    cloud.style.transform = `translateX(${fromPct}%)`
-    void cloud.offsetWidth // force reflow so the transition below actually animates
     let settled = false
     const finish = () => {
       if (settled) return
       settled = true
-      cloud.removeEventListener('transitionend', onEnd)
+      curtain.removeEventListener('transitionend', onEnd)
       resolve()
     }
-    const onEnd = (e: TransitionEvent) => { if (e.propertyName === 'transform') finish() }
-    cloud.addEventListener('transitionend', onEnd)
-    setTimeout(finish, WIPE_MS + 150) // safety net if transitionend never fires
-    requestAnimationFrame(() => {
-      cloud.style.transition = `transform ${WIPE_MS}ms ease-in-out`
-      cloud.style.transform = `translateX(${toPct}%)`
-    })
+    const onEnd = (e: TransitionEvent) => { if (e.propertyName === 'opacity') finish() }
+    curtain.addEventListener('transitionend', onEnd)
+    setTimeout(finish, FADE_MS + 150) // safety net if transitionend never fires
+    requestAnimationFrame(() => curtain.classList.toggle('on', on))
   })
 }
 
@@ -202,10 +201,10 @@ let nearFaye = false
 let transitioning = false
 
 /**
- * Swaps scenes behind a cloud wipe, like Clash of Clans' loading curtain: the cloud
- * slides in to fully cover the screen, the scene changes while hidden, then it slides
- * on out the other side. `instant` skips the animation for the very first scene load,
- * where there's nothing on screen yet to hide the swap from.
+ * Swaps scenes behind a fade: the screen darkens to black, the scene changes while
+ * nothing is visible, then it fades back up on the new one. `instant` skips the
+ * animation for the very first scene load, where there's nothing on screen yet to
+ * hide the swap from.
  */
 async function goto(id: SceneId, instant = false) {
   if (transitioning) return
@@ -221,10 +220,10 @@ async function goto(id: SceneId, instant = false) {
     return
   }
   transitioning = true
-  await slideCloud(-108, 0)
+  await fade(true)
   land()
   nearFaye = false
-  await slideCloud(0, 108)
+  await fade(false)
   transitioning = false
 }
 

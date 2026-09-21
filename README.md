@@ -97,8 +97,11 @@ already own, right under the price, so a purchase there is never a guess.
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
 
 Every scene change — walking into a building, leaving one, resetting your save —
-plays a brief cloud-wipe transition (`goto()` in `src/main.ts`). It's purely cosmetic:
-input is held during the ~0.8s it takes, then resumes exactly where it left off.
+fades the screen to black, swaps the scene while nothing is visible, then fades back
+up (`goto()` in `src/main.ts`). The fade itself is pure CSS: `.fade-wipe` in
+`style.css` owns the timing and easing, and `goto()` just toggles a class and waits
+on the real `transitionend`. It's purely cosmetic — input is held during the ~0.5s it
+takes, then resumes exactly where it left off.
 
 ## Talking to Faye
 
