@@ -240,7 +240,7 @@ const MAP_H = 998;
 
 const world: Scene = {
   id: "world",
-  name: "Willowbrook village",
+  name: "Greenville village",
   w: MAP_W,
   h: MAP_H,
   cache: false,

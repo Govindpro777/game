@@ -81,7 +81,7 @@ already own, right under the price, so a purchase there is never a guess.
 
 ## Scenes
 
-- **Willowbrook village** — the hub, with floating labels over each landmark that
+- **Greenville village** — the hub, with floating labels over each landmark that
   light up gold when you're close enough to press `E`. **You can only walk on the
   roads** — see below. A shopkeeper stands permanently at the seed shop's gate —
   purely decorative, she doesn't move or interact.
