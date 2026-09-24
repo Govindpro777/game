@@ -19,7 +19,7 @@ project root to rebuild it all; nothing here is edited by the game.
 | `tool-shop-owner.png` | A 7x2 character turnaround sheet, Ted | The 3/4 pose (col 4, row 0), mirrored to face left, cut out as the tool shop's standing NPC -- same convention as `seed-shop-girl.png`, but this one has the painted-background problem (see below) |
 | `tool-shop-avtar.png` | Ted's portrait, painted inside an ornate frame | His conversation portrait, downscaled to `public/portrait/ted.png` |
 | `Tool-shop-clodeup.jpeg` | An outdoor close-up of the shop's front, Ted baked into the art | `toolshopcloseup` scene's walkable background, copied as-is to `public/scene/toolshop-closeup.jpg` |
-| `Tool-shop-interior.jpeg` | The tool shop's interior: workbench, Ted, fireplace, a drawn exit door | `toolshop` scene's walkable background, copied as-is to `public/scene/toolshop-interior.jpg`. Ted is part of this art, not a separate sprite |
+| `Tool-shop-interior-2.jpeg` | The tool shop's interior: a billing desk (Ted seated at it), a separate loose workbench, fireplace, shelves, a drawn exit door | `toolshop` scene's walkable background, copied as-is to `public/scene/toolshop-interior.jpg`. Ted is part of this art, not a separate sprite |
 
 ## Not used yet
 
@@ -28,7 +28,8 @@ project root to rebuild it all; nothing here is edited by the game.
 | `seed-shop-interior.png` | An earlier walkable shop-room concept, a different room with a different shopkeeper | Has no exit drawn anywhere in it (it's an open-fronted cutaway with a solid black background, not a checkerboard), so `seed-shop.png` is in use instead -- its door is what the exit zone needs |
 | `cloud.png` | A seamless cloud-sky texture | Was the scene-transition wipe; the transition is a pure-CSS fade to black now, so nothing reads this |
 | `tool-shop-interior.jpg` | A shop-UI mockup: inventory grid, stock list, repair/upgrade | Front-facing perspective, so a player sprite has no floor to stand on. Better used as artwork behind the shop panel, or as a design target for reskinning it |
-| `tool-shop-building.png` | The isolated shop building, procedurally set in a hand-built yard | Replaced by `Tool-shop-clodeup.jpeg`/`Tool-shop-interior.jpeg`, painted scenes matching the seed shop's two-scene pattern instead |
+| `tool-shop-building.png` | The isolated shop building, procedurally set in a hand-built yard | Replaced by `Tool-shop-clodeup.jpeg`/`Tool-shop-interior-2.jpeg`, painted scenes matching the seed shop's two-scene pattern instead |
+| `Tool-shop-interior.jpeg` | An earlier version of the shop's interior: Ted standing at a central workbench | Replaced by `Tool-shop-interior-2.jpeg`'s layout (a separate billing desk and workbench), which needed more open floor than this version had |
 
 ## Reference only
 

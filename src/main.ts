@@ -231,8 +231,8 @@ function greetTedInside() {
 }
 
 /** Open floor in front of the workbench inside toolshop-interior.jpg. */
-const TED_INSIDE_POS = { x: 600, y: 525 }
-const TED_INSIDE_RADIUS = 145
+const TED_INSIDE_POS = { x: 280, y: 560 }
+const TED_INSIDE_RADIUS = 160
 let nearTedInside = false
 
 let transitioning = false

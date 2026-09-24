@@ -327,8 +327,8 @@ const toolshopcloseup: Scene = {
   zones: [],
 };
 
-const TOOLSHOP_INTERIOR_W = 1280;
-const TOOLSHOP_INTERIOR_H = 720;
+const TOOLSHOP_INTERIOR_W = 1600;
+const TOOLSHOP_INTERIOR_H = 877;
 
 const toolshop: Scene = {
   id: "toolshop",
@@ -336,16 +336,14 @@ const toolshop: Scene = {
   w: TOOLSHOP_INTERIOR_W,
   h: TOOLSHOP_INTERIOR_H,
   cache: true,
-  playerScale: 2,
-  // The room is short (1280x720) and every stick of furniture in it -- fireplace,
-  // workbench, shelves -- blocks the floor down to about y=490-590, so there's no
-  // walkable ground anywhere above that; on a very wide window the normal "fit a
-  // 960x600 box" zoom needs more vertical room than that leaves, clamping the
-  // camera to the bottom and cropping the TOOLS sign off the top. Capped below so
-  // this room only ever zooms to whatever a full-coverage fill actually needs.
+  playerScale: 1.3,
+  // This room's floor is much deeper than the original interior's, so the crop is
+  // far less severe -- but standing right at Ted's desk on a very wide window can
+  // still push the top of his billing desk to the very edge of the frame. Same
+  // cap, same reasoning as before: never zoom in past what full coverage needs.
   maxZoom: 1,
   bg: "#190d06", // sampled from the art's own dark corners, so any sliver of background shown on the sides blends in
-  spawn: { x: 700, y: 640 }, // open floor in the middle of the room, clear of both the counter and the door
+  spawn: { x: 900, y: 760 }, // open floor in the middle of the room -- Ted's billing desk is off to the left, the door off to the right
   ground: (c) =>
     c.drawImage(
       img("/scene/toolshop-interior.jpg"),
@@ -355,17 +353,24 @@ const toolshop: Scene = {
       TOOLSHOP_INTERIOR_H,
     ),
   decor: [],
-  // Measured directly off a coordinate-grid overlay of the actual art -- the first
-  // cut here (guessed, not measured) ran well past where the fireplace, workbench
-  // and shelves actually end, eating into open floor the player should be able to
-  // walk on; that read as movement just stopping partway across a clear-looking
-  // room. There's no drawn wall at the bottom of this image either (unlike the
-  // seed shop interior), so the floor relies on the global edge clamp in main.ts
-  // rather than a dedicated blocked rect.
+  // Measured directly off a coordinate-grid overlay of the actual art (see the
+  // second interior's own note in git history for why: a guessed cut here ran
+  // past where the furniture actually ends and read as movement just stopping
+  // partway across a clear-looking room). This art's floor is much deeper than
+  // the original interior's, so the global edge clamp in main.ts is enough on
+  // its own -- no dedicated "past the edge of the floor" rect needed.
   blocked: [
-    { x: 0, y: 0, w: 335, h: 565 }, // the fireplace, anvil and stool
-    { x: 335, y: 0, w: 520, h: 590 }, // the wall, hanging tools, the workbench and Ted behind it
-    { x: 855, y: 0, w: 230, h: 490 }, // shelves, baskets and the barrel with the cat
+    { x: 0, y: 0, w: 470, h: 600 }, // the price list, fireplace and Ted's billing desk
+    { x: 470, y: 0, w: 520, h: 560 }, // the wall, hanging tools, anvil, window and workbench
+    { x: 1015, y: 0, w: 300, h: 340 }, // shelves, boxes and baskets
+    { x: 1225, y: 230, w: 160, h: 180 }, // the barrel with the cat
+    // The door panel itself only runs to about y=400 (checked against a
+    // close-up crop of the art) -- the previous y:520 cut was 120px too tall,
+    // squeezing the actual floor in front of the door down to a sliver barely
+    // wide enough to stand in, which is why the exit was so hard to trigger
+    // no matter how generous its zone/reach was.
+    { x: 1385, y: 0, w: 215, h: 400 }, // the door frame and wall beside it
+    { x: 1480, y: 560, w: 120, h: 100 }, // the little table and lantern, bottom-right corner
     { x: 0, y: 0, w: 14, h: TOOLSHOP_INTERIOR_H },
     { x: TOOLSHOP_INTERIOR_W - 14, y: 0, w: 14, h: TOOLSHOP_INTERIOR_H },
   ],
@@ -373,8 +378,13 @@ const toolshop: Scene = {
     // Bigger than the norm and with its own longer reach, so browsing the stock
     // doesn't need lining up right against the desk -- most of the open floor in
     // front of it works.
-    { x: 430, y: 480, w: 340, h: 90, id: "counter", label: "Tool counter", reach: 150 },
-    { x: 1140, y: 480, w: 140, h: 140, id: "exit", label: "Village", to: "world" }, // the door
+    { x: 180, y: 520, w: 220, h: 80, id: "counter", label: "Billing counter", reach: 150 },
+    // The door's own floor threshold runs wide (the whole gap between the barrel
+    // and the right wall), and standing anywhere near it -- not lined up on one
+    // exact spot -- should trigger the exit. findTarget() in main.ts caps a zone's
+    // effective reach at max(w,h)/2+56 regardless of `reach`, so this needs to be
+    // genuinely large, not just given a big `reach` on top of a small box.
+    { x: 1280, y: 380, w: 300, h: 200, id: "exit", label: "Village", to: "world", reach: 260 },
   ],
 };
 

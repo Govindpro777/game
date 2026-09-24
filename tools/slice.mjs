@@ -29,9 +29,10 @@
  *   assets/Tool-shop-clodeup.jpeg -> public/scene/toolshop-closeup.jpg, the outdoor space in
  *                                    front of the shop the player walks into first -- Ted is
  *                                    baked into this art; talking to him is what leads inside
- *   assets/Tool-shop-interior.jpeg-> public/scene/toolshop-interior.jpg, the walkable interior
+ *   assets/Tool-shop-interior-2.jpeg-> public/scene/toolshop-interior.jpg, the walkable interior
  *                                    the conversation can send you into -- Ted is baked into
- *                                    this art too (see scenes.ts)
+ *                                    this art too (see scenes.ts). Replaces the original
+ *                                    Tool-shop-interior.jpeg, which is no longer read here.
  *
  * The Gemini sheets have their "transparent" checkerboard (or, for the tool shop owner, a
  * painted floor tile) baked in as real pixels, so every source image goes through
@@ -176,7 +177,7 @@ await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/
 // yard visible) and the player, drawn at a fixed sprite-sheet size, reads smaller
 // next to it.
 await sharp('assets/Tool-shop-clodeup.jpeg').resize({ width: 960 }).jpeg({ quality: 90 }).toFile('public/scene/toolshop-closeup.jpg')
-await sharp('assets/Tool-shop-interior.jpeg').jpeg({ quality: 90 }).toFile('public/scene/toolshop-interior.jpg')
+await sharp('assets/Tool-shop-interior-2.jpeg').jpeg({ quality: 90 }).toFile('public/scene/toolshop-interior.jpg')
 
 /* 9. small UI icons, used as-is */
 mkdirSync('public/icon', { recursive: true })
