@@ -28,11 +28,17 @@ export type Save = {
    * the "did you meet Ted?" return-visit script in favour of the steady-state one. */
   metTedConfirms: number
   seenToolShopIntro: boolean
+  /** When this save was first created -- not touched by later saves. Used to
+   * auto-wipe the save after SAVE_TTL_MS regardless of how recently it was
+   * played, rather than just how recently it was saved. */
+  createdAt: number
   savedAt: number
 }
 
 export const PLOT_COUNT = 24
 const KEY = 'village-farm-save-1'
+/** A save (and everything in localStorage under it) is auto-wiped once it's this old. */
+export const SAVE_TTL_MS = 6 * 60 * 60 * 1000
 
 function emptyPlots(): Plot[] {
   return Array.from({ length: PLOT_COUNT }, () => ({ tilled: false, crop: null, progress: 0, wetUntil: 0 }))
@@ -57,6 +63,7 @@ export function freshSave(): Save {
     seenSeedShopIntro: false,
     metTedConfirms: 0,
     seenToolShopIntro: false,
+    createdAt: Date.now(),
     savedAt: Date.now(),
   }
 }
@@ -68,6 +75,10 @@ function load(): Save {
     const raw = localStorage.getItem(KEY)
     if (!raw) return freshSave()
     const s = { ...freshSave(), ...(JSON.parse(raw) as Save) }
+    if (Date.now() - (s.createdAt || 0) > SAVE_TTL_MS) {
+      try { localStorage.removeItem(KEY) } catch { /* storage unavailable */ }
+      return freshSave()
+    }
     if (!Array.isArray(s.plots) || s.plots.length !== PLOT_COUNT) s.plots = emptyPlots()
     const away = Math.max(0, Date.now() - (s.savedAt || Date.now()))
     for (const p of s.plots) {

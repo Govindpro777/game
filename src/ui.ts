@@ -16,6 +16,8 @@ const coins = el('div', 'panel coins', '<span class="coin-dot"></span><span id="
 const place = el('div', 'panel place', '')
 const hotbar = el('div', 'panel hotbar')
 const bagBtn = el('button', 'panel bagbtn', '<img src="/sprites/prop/sacks.png" alt="Inventory" /><span class="badge"></span>')
+const restartBtn = el('button', 'panel restartbtn', '&#8635;')
+restartBtn.title = 'Restart (wipes progress)'
 const prompt = el('div', 'panel prompt')
 const toastEl = el('div', 'panel toast')
 const hint = el('div', 'hint')
@@ -23,7 +25,18 @@ const labelLayer = el('div', 'labels')
 prompt.style.display = 'none'
 toastEl.style.display = 'none'
 bagBtn.onclick = () => { if (!modalOpen() && !isDialogueOpen()) openInventory() }
-root.append(labelLayer, place, coins, hint, prompt, hotbar, bagBtn, toastEl)
+// Always-visible escape hatch: the "Start over" button in the tool shop panel
+// does the same thing, but only after walking all the way there -- this one's
+// reachable from anywhere, which is why it needs its own confirm rather than
+// firing on a single misclick.
+restartBtn.onclick = () => {
+  if (modalOpen() || isDialogueOpen()) return
+  openConfirm('Wipe all progress and start over?', 'Wipe progress', () => {
+    reset()
+    hooks.onReset()
+  })
+}
+root.append(labelLayer, place, coins, hint, prompt, hotbar, bagBtn, restartBtn, toastEl)
 
 export const canAfford = (price: number) => state.unlimited || state.coins >= price
 export const pay = (price: number) => { if (!state.unlimited) state.coins -= price }
@@ -146,6 +159,26 @@ export const modalOpen = () => modal !== null
 export function closeModal() {
   modal?.remove()
   modal = null
+}
+
+/** Themed stand-in for window.confirm() -- same overlay/backdrop as the shop
+ * panels, but a small centred box with just a message and two buttons. */
+function openConfirm(message: string, confirmLabel: string, onConfirm: () => void) {
+  closeModal()
+  const bg = el('div', 'modal-bg')
+  const box = el('div', 'modal confirm')
+  box.innerHTML = `<p>${message}</p>`
+  const btns = el('div', 'confirm-btns')
+  const cancel = el('button', 'cancel', 'Cancel')
+  cancel.onclick = closeModal
+  const danger = el('button', 'danger', confirmLabel)
+  danger.onclick = () => { closeModal(); onConfirm() }
+  btns.append(cancel, danger)
+  box.append(btns)
+  bg.append(box)
+  bg.onclick = (e) => { if (e.target === bg) closeModal() }
+  root.append(bg)
+  modal = bg
 }
 
 function openModal(title: string, sub: string, build: (body: HTMLElement) => void) {

@@ -14,7 +14,7 @@ import {
   type Rect, type Scene, type Zone,
 } from './scenes'
 import {
-  isRipe, owns, power, save, stageOf, state, type Plot, type SceneId,
+  isRipe, owns, power, reset, save, SAVE_TTL_MS, stageOf, state, type Plot, type SceneId,
 } from './state'
 import {
   closeModal, currentSeed, initUi, modalOpen, openSeedShop, openToolShop,
@@ -238,17 +238,33 @@ let nearTedInside = false
 let transitioning = false
 
 /**
+ * Where the player lands back in the village after leaving a shop, keyed by the
+ * scene they're leaving from -- right outside that shop's gate, rather than back
+ * at the world scene's own default spawn (in front of Home) every time.
+ */
+const WORLD_RETURN_POS: Partial<Record<SceneId, { x: number; y: number }>> = {
+  seedshop: { x: 694, y: 660 },
+  seedshopinterior: { x: 694, y: 660 },
+  toolshopcloseup: { x: 1252, y: 884 },
+  toolshop: { x: 1252, y: 884 },
+}
+
+/**
  * Swaps scenes behind a fade: the screen darkens to black, the scene changes while
  * nothing is visible, then it fades back up on the new one. `instant` skips the
  * animation for the very first scene load, where there's nothing on screen yet to
- * hide the swap from.
+ * hide the swap from. `forceDefaultSpawn` skips WORLD_RETURN_POS -- a full reset
+ * should always land at the world's actual starting spot (in front of Home), not
+ * wherever a shop's exit would normally send you back to.
  */
-async function goto(id: SceneId, instant = false) {
+async function goto(id: SceneId, instant = false, forceDefaultSpawn = false) {
   if (transitioning) return
+  const from = scene.id
   const land = () => {
     scene = SCENES[id]
-    player.x = scene.spawn.x
-    player.y = scene.spawn.y
+    const back = !forceDefaultSpawn && id === 'world' ? WORLD_RETURN_POS[from] : undefined
+    player.x = back?.x ?? scene.spawn.x
+    player.y = back?.y ?? scene.spawn.y
     closeModal()
   }
   if (instant) {
@@ -906,13 +922,43 @@ function syncSize() {
 
 /* ---------------- boot ---------------- */
 
+/** Drops the player back at the world's actual starting spot (in front of Home),
+ * bypassing WORLD_RETURN_POS -- shared by the tool shop's "Start over", the
+ * always-visible HUD restart button, and the 6-hour auto-expiry below. Assumes
+ * reset() has already been (or is about to be) called by the caller. */
+function backToStart() {
+  ensureResources()
+  goto('world', false, true)
+}
+
+function wipeSave() {
+  reset()
+  backToStart()
+}
+
+/**
+ * A save this old is wiped even mid-session, not just on the next page load
+ * (state.ts's own load() only catches the "reopened after 6h" case). Checked
+ * occasionally rather than every frame -- there's no need for split-second
+ * precision on a multi-hour timer.
+ */
+function watchSaveExpiry() {
+  setInterval(() => {
+    if (Date.now() - state.createdAt > SAVE_TTL_MS) {
+      wipeSave()
+      toast('Your save was reset after 6 hours')
+    }
+  }, 60_000)
+}
+
 async function boot() {
   resize()
   watchSize()
   lockViewport()
   initInput()
-  initUi({ selectTool, cycleSeed, onReset: () => { ensureResources(); goto('world') } })
+  initUi({ selectTool, cycleSeed, onReset: backToStart })
   buildTouch()
+  watchSaveExpiry()
   await load(ALL)
   ensureResources()
   if (state.plots.length !== PLOT_COLS * PLOT_ROWS) state.plots.length = PLOT_COLS * PLOT_ROWS
