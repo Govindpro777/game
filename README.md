@@ -83,17 +83,17 @@ already own, right under the price, so a purchase there is never a guess.
 
 - **Greenville village** — the hub, with floating labels over each landmark that
   light up gold when you're close enough to press `E`. **You can only walk on the
-  roads** — see below. A shopkeeper stands permanently at the seed shop's gate —
-  purely decorative, she doesn't move or interact.
-- **Ted's tools** — buy and upgrade the five tools, sell wood and stone.
-- **Seed & produce market** is two scenes, not one, neither of them a
-  procedurally-built room — both are painted flat backgrounds with the walkable floor
-  and solid shapes carved out by hand:
-  - Walking through the village door leads to an outdoor plaza (Faye standing in it as
-    a sprite), where **talking to her starts the moment you arrive** (see below).
-  - Saying yes sends you on into the shop's interior (Faye painted in at the counter
-    this time). Step up to the counter and press `E`/`Enter` to buy or sell; walk to
-    the door mat to leave, straight back to the village.
+  roads** — see below. A shopkeeper stands permanently at each shop's gate —
+  purely decorative, they don't move or interact.
+- **Seed & produce market** and **Ted's tools** are both two scenes, not one,
+  neither of them a procedurally-built room — all four are painted flat backgrounds
+  with the walkable floor and solid shapes carved out by hand:
+  - Walking through the village door leads to an outdoor plaza or yard (the
+    shopkeeper standing in it, painted into the art), where **talking to them starts
+    the moment you arrive** (see below).
+  - Saying yes sends you on into the shop's interior (the shopkeeper painted in
+    again, this time at the counter or workbench). Step up and press `E`/`Enter` to
+    buy, sell or upgrade; walk to the door to leave, straight back to the village.
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
 
 Every scene change — walking into a building, leaving one, resetting your save —
@@ -133,6 +133,18 @@ rewording a line or adding a branch means editing that table, not the engine. A
 node's optional `flag` is how the script tells `talkToFaye()` in `main.ts` which
 branch was taken (e.g. `met_ted`'s `flag: 'metTedYes'` is what advances the counter
 that eventually retires script 2) without the data file needing to import game state.
+
+## Talking to Ted
+
+The tool shop works the same way, just with a much shorter conversation: walking
+into the yard outside spawns you well back from Ted, and talking to him only starts
+once you've actually walked up to him (`talkToTed()` in `main.ts`, the same
+proximity pattern as Faye's). The first time ever he introduces himself and invites
+you in — remembered in your save, never repeats. Every visit after that he just
+asks if you want to come in, `Yes`/`No`. Saying yes, or completing the first-visit
+script, walks you into the shop's interior; declining or escaping the conversation
+sends you straight back to the village. The scripts are `TOOL_FIRST_VISIT` and
+`TOOL_RETURN_VISIT` in `src/data/dialogue.ts`.
 
 ## Walking the village
 
@@ -175,7 +187,7 @@ pickaxe yield more per swing.
 ```
 src/
   main.ts          game loop, player, camera, rendering, interaction
-  scenes.ts        the four scenes: ground, decor, collision, zones
+  scenes.ts        every scene: ground, decor, collision, zones
   state.ts         save/load, plots, inventory
   ui.ts            HUD and shop panels (DOM overlay, not canvas)
   dialogue.ts      the conversation overlay: portrait, name plate, answer buttons
@@ -218,7 +230,5 @@ The helper scripts it orchestrates:
   of one side-view walk cycle, with no distinct front or back pose. Walking up or
   down reuses the same side frames as walking sideways, so the character is always
   shown in profile regardless of which way they're actually facing.
-- **The seed shop is the tool shop with a recoloured roof.** There is only one
-  building asset.
 - Ground grass is generated procedurally from the sheet's own palette, because
   every grass tile in the sheet has decals baked in and tiles visibly.

@@ -21,9 +21,21 @@
  *                                    walk cycle, sliced left to right into player/f0..f8,
  *                                    replacing the old sheet's front/back/side frames --
  *                                    see the last step)
+ *   assets/tool-shop-owner.png    -> the tool shop's standing NPC (a 7x2 turnaround sheet,
+ *                                    same painted checkerboard as the other Gemini sheets;
+ *                                    column 4, row 0's 3/4 pose, mirrored to face left, same
+ *                                    convention as the seed shop's NPC)
+ *   assets/tool-shop-avtar.png    -> public/portrait/ted.png, his dialogue portrait
+ *   assets/Tool-shop-clodeup.jpeg -> public/scene/toolshop-closeup.jpg, the outdoor space in
+ *                                    front of the shop the player walks into first -- Ted is
+ *                                    baked into this art; talking to him is what leads inside
+ *   assets/Tool-shop-interior.jpeg-> public/scene/toolshop-interior.jpg, the walkable interior
+ *                                    the conversation can send you into -- Ted is baked into
+ *                                    this art too (see scenes.ts)
  *
- * The two Gemini sheets have their "transparent" checkerboard painted in as real
- * pixels, so every source image goes through dealpha.mjs first to recover alpha.
+ * The Gemini sheets have their "transparent" checkerboard (or, for the tool shop owner, a
+ * painted floor tile) baked in as real pixels, so every source image goes through
+ * dealpha.mjs first to recover alpha.
  */
 import sharp from 'sharp'
 import { execSync } from 'node:child_process'
@@ -32,7 +44,6 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 const GEN = 'assets/generated'
 const OUT = 'public/sprites'
 const SHEET = `${GEN}/sprite-sheet-alpha.png`
-const BUILDING = `${GEN}/tool-shop-alpha.png`
 
 const run = (cmd) => execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
 
@@ -64,7 +75,6 @@ const NAMES = {
 /* 1. recover real alpha from the painted checkerboards */
 mkdirSync(GEN, { recursive: true })
 run(`node tools/dealpha.mjs "assets/sprite-sheet.png" "${SHEET}"`)
-run(`node tools/dealpha.mjs "assets/tool-shop-building.png" "${BUILDING}"`)
 
 /* 2. cut the named sprites out of the sheet */
 const boxes = JSON.parse(run(`node tools/blobs.mjs ${SHEET} 700`).split('\n')[0])
@@ -82,7 +92,6 @@ for (const [idx, name] of Object.entries(NAMES)) {
 
 /* 3. scene backgrounds */
 mkdirSync('public/scene', { recursive: true })
-await sharp(BUILDING).trim({ threshold: 1 }).png().toFile('public/scene/toolshop.png')
 await sharp('assets/game-bg.jpeg').png().toFile('public/scene/village.png')
 // Walkable road network, derived from the artwork's own colours (see roadmask.mjs).
 run('node tools/roadmask.mjs assets/game-bg.jpeg public/scene/walkmask.png "" 760 700')
@@ -127,17 +136,47 @@ mkdirSync(`${OUT}/npc`, { recursive: true })
   await sharp(cell).trim({ threshold: 10 }).toFile(`${OUT}/npc/seedshop_girl.png`)
 }
 
+/* 6b. tool shop NPC: same idea as the seed shop's, but this sheet has the painted
+   floor-tile problem (not a checkerboard, but caught by the same near-grey
+   background heuristic), so it goes through dealpha.mjs first. Row 0 of the 7x2
+   turnaround sheet isn't perfectly y-aligned either, so -- like the player's walk
+   cycle -- the blobs are grouped by row and re-sorted by x alone before picking a
+   column, rather than trusting blobs.mjs's own (y, then x) order. */
+{
+  const TED_SHEET = `${GEN}/tool-shop-owner-alpha.png`
+  run(`node tools/dealpha.mjs "assets/tool-shop-owner.png" "${TED_SHEET}"`)
+  const tedBoxes = JSON.parse(run(`node tools/blobs.mjs ${TED_SHEET} 700`).split('\n')[0])
+  const tedRow0 = tedBoxes.filter((b) => b.y < 300).sort((a, b) => a.x - b.x)
+  const pose = tedRow0[4]
+  const cell = await sharp(TED_SHEET)
+    .extract({ left: pose.x, top: pose.y, width: pose.w, height: pose.h })
+    // Kept facing right (unlike the seed shop girl's .flop() above) -- Ted stands
+    // to the right of the village path in front of his door, so facing right
+    // faces into the shop/along the path rather than off toward the far corner.
+    .png().toBuffer()
+  await sharp(cell).trim({ threshold: 10 }).toFile(`${OUT}/npc/toolshop_owner.png`)
+}
+
 /* 7. dialogue portraits: already painted inside ornate frames, so they go in whole,
    just downscaled to roughly 3x their on-screen size */
 mkdirSync('public/portrait', { recursive: true })
-for (const [src, name] of [['assets/girl-profile.png', 'faye'], ['assets/boy-profile.png', 'bao']]) {
+for (const [src, name] of [
+  ['assets/girl-profile.png', 'faye'], ['assets/boy-profile.png', 'bao'], ['assets/tool-shop-avtar.png', 'ted'],
+]) {
   await sharp(src).resize({ width: 400 }).png({ compressionLevel: 9 }).toFile(`public/portrait/${name}.png`)
 }
 
-/* 8. the seed shop's two scenes, used as-is (the scene transition is a pure-CSS
-   fade now, so there's no wipe texture to copy) */
+/* 8. the seed shop's and tool shop's cutscene pairs, used as-is (the scene
+   transition is a pure-CSS fade now, so there's no wipe texture to copy) */
 await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
 await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/scene/seedshop-interior.png')
+// Downscaled well below its native 1776x1104 -- the camera's fixed world-space fit
+// box shows a constant number of native pixels regardless of a scene's own
+// resolution, so a smaller source image reads as more zoomed out (more of the
+// yard visible) and the player, drawn at a fixed sprite-sheet size, reads smaller
+// next to it.
+await sharp('assets/Tool-shop-clodeup.jpeg').resize({ width: 960 }).jpeg({ quality: 90 }).toFile('public/scene/toolshop-closeup.jpg')
+await sharp('assets/Tool-shop-interior.jpeg').jpeg({ quality: 90 }).toFile('public/scene/toolshop-interior.jpg')
 
 /* 9. small UI icons, used as-is */
 mkdirSync('public/icon', { recursive: true })

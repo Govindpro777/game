@@ -46,12 +46,12 @@ export const SPRITES = {
   nature: ['tree_a', 'rock_a', 'rock_b'].map((n) => `/sprites/nature/${n}.png`),
   ground: ['grass', 'cobble', 'soil'].map((n) => `/sprites/ground/${n}.png`),
   decals: ['rock_a', 'rock_b', 'flower_a', 'flower_b'].map((n) => `/sprites/decal/${n}.png`),
-  npc: ['seedshop_girl'].map((n) => `/sprites/npc/${n}.png`),
-  portraits: ['faye', 'bao'].map((n) => `/portrait/${n}.png`),
+  npc: ['seedshop_girl', 'toolshop_owner'].map((n) => `/sprites/npc/${n}.png`),
+  portraits: ['faye', 'bao', 'ted'].map((n) => `/portrait/${n}.png`),
   icons: ['leaf'].map((n) => `/icon/${n}.png`),
   scenes: [
-    '/scene/village.png', '/scene/toolshop.png', '/scene/seedshop-closeup.jpg',
-    '/scene/seedshop-interior.png', '/scene/walkmask.png',
+    '/scene/village.png', '/scene/seedshop-closeup.jpg', '/scene/seedshop-interior.png',
+    '/scene/toolshop-closeup.jpg', '/scene/toolshop-interior.jpg', '/scene/walkmask.png',
   ],
 }
 

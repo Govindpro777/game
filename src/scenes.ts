@@ -1,4 +1,4 @@
-import { img, prop, ground, decal, nature, npc } from "./core/assets";
+import { img, prop, decal, npc } from "./core/assets";
 import type { SceneId } from "./state";
 
 export type Rect = { x: number; y: number; w: number; h: number };
@@ -39,6 +39,22 @@ export type Scene = {
   mask?: string;
   /** Sprite scale for the player in this scene; the village is drawn further out. */
   playerScale?: number;
+  /**
+   * Caps how far `sceneZoom()` will push past the minimum needed to cover the
+   * viewport (never below that minimum -- coverage always wins, so this only ever
+   * zooms a scene out further, never in). For a short scene on a very wide window,
+   * the usual "fit a 960x600 box" zoom can be more than the scene's own height can
+   * afford without clamping the camera to the bottom and cropping whatever's near
+   * the top; capping it here keeps more of the room in frame instead.
+   */
+  maxZoom?: number;
+  /**
+   * Canvas fill colour behind the scene, before anything is drawn -- only matters
+   * where the scene doesn't fully cover the viewport (normally nowhere, but a
+   * `maxZoom`-capped scene can show a sliver on the sides; see sceneZoom() in
+   * main.ts). Defaults to a dark green that suits outdoor scenes.
+   */
+  bg?: string;
   spawn: { x: number; y: number };
   ground: (c: CanvasRenderingContext2D) => void;
   decor: Decor[];
@@ -50,37 +66,6 @@ const rng = (seed: number) => {
   let s = (seed * 2654435761) >>> 0;
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 };
-
-/** Mirror-tiles a texture so neighbouring cells always share an identical edge: no seams. */
-function mirror(
-  c: CanvasRenderingContext2D,
-  im: HTMLImageElement,
-  r: Rect,
-  scale = 1,
-) {
-  if (!im.width) return;
-  const cw = im.width * scale;
-  const ch = im.height * scale;
-  c.save();
-  c.beginPath();
-  c.rect(r.x, r.y, r.w, r.h);
-  c.clip();
-  for (let j = 0; j < Math.ceil(r.h / ch); j++) {
-    for (let i = 0; i < Math.ceil(r.w / cw); i++) {
-      const fx = i % 2 ? -1 : 1;
-      const fy = j % 2 ? -1 : 1;
-      c.save();
-      c.translate(
-        r.x + i * cw + (fx < 0 ? cw : 0),
-        r.y + j * ch + (fy < 0 ? ch : 0),
-      );
-      c.scale(fx, fy);
-      c.drawImage(im, 0, 0, cw + 0.6, ch + 0.6);
-      c.restore();
-    }
-  }
-  c.restore();
-}
 
 function scatter(
   c: CanvasRenderingContext2D,
@@ -248,8 +233,11 @@ const world: Scene = {
   playerScale: 0.45,
   spawn: { x: 550, y: 628 }, // in front of Home
   ground: (c) => c.drawImage(img("/scene/village.png"), 0, 0, MAP_W, MAP_H),
-  // Stands permanently at the seed shop gate: decorative only, not a zone or NPC AI.
-  decor: [{ src: npc("seedshop_girl"), x: 745, y: 580, s: 0.18 }],
+  // Stand permanently at their shop's gate: decorative only, not a zone or NPC AI.
+  decor: [
+    { src: npc("seedshop_girl"), x: 745, y: 580, s: 0.18 },
+    { src: npc("toolshop_owner"), x: 1285, y: 812, s: 0.22 }, // on the path right in front of the tool shop's door
+  ],
   blocked: [],
   zones: [
     { x: 470, y: 548, w: 90, h: 52, id: "home", label: "Home" },
@@ -269,7 +257,7 @@ const world: Scene = {
       h: 54,
       id: "toolshop",
       label: "Tool shop",
-      to: "toolshop",
+      to: "toolshopcloseup",
     },
     {
       x: 452,
@@ -285,93 +273,110 @@ const world: Scene = {
   ],
 };
 
-/* ---------------- shop scenes ---------------- */
+/**
+ * The tool shop is two scenes, not one -- the same pattern as the seed shop below.
+ * Walking through the village door leads to `toolshopcloseup`, the yard outside
+ * (one flat painting with Ted baked into the art, standing by the door); talking to
+ * him only starts once you've actually walked up to him (see the proximity check
+ * in main.ts). Saying yes sends you on into `toolshop` -- a second flat painting,
+ * this time the shop's interior, Ted baked into the art again behind the
+ * workbench -- where you actually buy and upgrade tools and can walk back out to
+ * the village through its door.
+ */
+// Downscaled well below the source art's native 1776x1104 (see slice.mjs) -- the
+// camera's fixed world-space fit box shows a constant number of native pixels
+// regardless of a scene's own resolution, so shrinking the art further zooms the
+// camera out relative to the yard, and a smaller playerScale keeps Bao from
+// towering over it.
+// 960 wide, and its true proportional height (see slice.mjs) -- every blocked rect
+// below was measured directly off a coordinate-grid overlay of this exact image, so
+// they track real art features instead of drifting further with every resize.
+const TOOLSHOP_CLOSEUP_W = 960;
+const TOOLSHOP_CLOSEUP_H = 597;
 
-const SHOP_W = 1000;
-const SHOP_H = 620;
-const BUILDING = { x: 272, y: 24, s: 0.5 };
-// Local-pixel y (in the 902x868 source sprite) of the doorstep, where the solid wall
-// actually ends -- past that the art is just the raised porch mound and scattered
-// ground clutter, which a player standing in front of it should always draw over.
-const BUILDING_SORT_Y = BUILDING.y + 615 * BUILDING.s;
-const YARD: Rect = { x: 52, y: 386, w: 896, h: 214 };
-
-function shopScene(
-  id: "toolshop",
-  name: string,
-  building: string,
-  counterLabel: string,
-  seed: number,
-  extra: Decor[],
-): Scene {
-  const decor: Decor[] = [
-    {
-      src: img(building),
-      x: BUILDING.x,
-      y: BUILDING.y,
-      s: BUILDING.s,
-      sortY: BUILDING_SORT_Y,
-    },
-    { src: nature("tree_a"), x: 22, y: 92, s: 0.76 },
-    { src: nature("tree_a"), x: 852, y: 84, s: 0.7 },
-    { src: nature("tree_a"), x: 890, y: 208, s: 0.56 },
-    ...extra,
-  ];
-  const solid: Rect[] = [
-    { x: 318, y: 34, w: 358, h: 296 },
-    { x: 0, y: 0, w: SHOP_W, h: 72 },
-    { x: 0, y: 0, w: 20, h: SHOP_H },
-    { x: SHOP_W - 20, y: 0, w: 20, h: SHOP_H },
-    { x: 0, y: SHOP_H - 14, w: SHOP_W, h: 14 },
-  ];
-  fenceRow(decor, solid, 8, 62, 16, 64);
-  fenceCol(decor, solid, 10, 96, 8, 40);
-  fenceCol(decor, solid, SHOP_W - 20, 96, 8, 40);
-
-  return {
-    id,
-    name,
-    w: SHOP_W,
-    h: SHOP_H,
-    cache: true,
-    spawn: { x: 500, y: 548 },
-    ground: (c) => {
-      grassBase(c, SHOP_W, SHOP_H, seed, 40, YARD);
-      mirror(c, ground("cobble"), YARD, 1);
-    },
-    decor,
-    blocked: solid,
-    zones: [
-      { x: 332, y: 342, w: 136, h: 62, id: "counter", label: counterLabel },
-      {
-        x: 390,
-        y: 562,
-        w: 220,
-        h: 46,
-        id: "exit",
-        label: "Village",
-        to: "world",
-      },
-    ],
-  };
-}
-
-const toolshop = shopScene(
-  "toolshop",
-  "Ted’s tools",
-  "/scene/toolshop.png",
-  "Tool counter",
-  7,
-  [
-    { src: prop("logs_big"), x: 82, y: 372, s: 0.46 },
-    { src: prop("barrels"), x: 836, y: 352, s: 0.44 },
-    { src: prop("crate"), x: 132, y: 480, s: 0.4 },
-    { src: prop("sacks"), x: 828, y: 482, s: 0.42 },
-    { src: prop("lantern"), x: 196, y: 296, s: 0.42 },
-    { src: prop("cart"), x: 742, y: 540, s: 0.46 },
-    { src: prop("logs_small"), x: 86, y: 548, s: 0.42 },
+const toolshopcloseup: Scene = {
+  id: "toolshopcloseup",
+  name: "Ted’s tools",
+  w: TOOLSHOP_CLOSEUP_W,
+  h: TOOLSHOP_CLOSEUP_H,
+  cache: true,
+  playerScale: 0.7,
+  spawn: { x: 94, y: 384 }, // on the path by the lamppost, far from Ted -- walking up to him or the door is what starts the chat
+  ground: (c) =>
+    c.drawImage(
+      img("/scene/toolshop-closeup.jpg"),
+      0,
+      0,
+      TOOLSHOP_CLOSEUP_W,
+      TOOLSHOP_CLOSEUP_H,
+    ),
+  decor: [],
+  blocked: [
+    { x: 0, y: 0, w: TOOLSHOP_CLOSEUP_W, h: 141 }, // garden stalls, the fence and the shop's roofline
+    { x: 413, y: 0, w: 197, h: 112 }, // the river
+    { x: 375, y: 178, w: 103, h: 103 }, // the bush beside the shop sign
+    { x: 534, y: 141, w: 75, h: 253 }, // the wall left of the door
+    { x: 722, y: 141, w: 122, h: 253 }, // the wall right of the door
+    { x: 844, y: 0, w: 116, h: 394 }, // the chimney
+    { x: 455, y: 253, w: 108, h: 141 }, // the tool rack leaning against the shop wall
+    { x: 839, y: 366, w: 84, h: 84 }, // the barrel by the door
+    { x: 0, y: TOOLSHOP_CLOSEUP_H - 14, w: TOOLSHOP_CLOSEUP_W, h: 14 },
+    { x: 0, y: 0, w: 14, h: TOOLSHOP_CLOSEUP_H },
+    { x: TOOLSHOP_CLOSEUP_W - 14, y: 0, w: 14, h: TOOLSHOP_CLOSEUP_H },
   ],
-);
+  zones: [],
+};
+
+const TOOLSHOP_INTERIOR_W = 1280;
+const TOOLSHOP_INTERIOR_H = 720;
+
+const toolshop: Scene = {
+  id: "toolshop",
+  name: "Ted’s tools",
+  w: TOOLSHOP_INTERIOR_W,
+  h: TOOLSHOP_INTERIOR_H,
+  cache: true,
+  playerScale: 2,
+  // The room is short (1280x720) and every stick of furniture in it -- fireplace,
+  // workbench, shelves -- blocks the floor down to about y=490-590, so there's no
+  // walkable ground anywhere above that; on a very wide window the normal "fit a
+  // 960x600 box" zoom needs more vertical room than that leaves, clamping the
+  // camera to the bottom and cropping the TOOLS sign off the top. Capped below so
+  // this room only ever zooms to whatever a full-coverage fill actually needs.
+  maxZoom: 1,
+  bg: "#190d06", // sampled from the art's own dark corners, so any sliver of background shown on the sides blends in
+  spawn: { x: 700, y: 640 }, // open floor in the middle of the room, clear of both the counter and the door
+  ground: (c) =>
+    c.drawImage(
+      img("/scene/toolshop-interior.jpg"),
+      0,
+      0,
+      TOOLSHOP_INTERIOR_W,
+      TOOLSHOP_INTERIOR_H,
+    ),
+  decor: [],
+  // Measured directly off a coordinate-grid overlay of the actual art -- the first
+  // cut here (guessed, not measured) ran well past where the fireplace, workbench
+  // and shelves actually end, eating into open floor the player should be able to
+  // walk on; that read as movement just stopping partway across a clear-looking
+  // room. There's no drawn wall at the bottom of this image either (unlike the
+  // seed shop interior), so the floor relies on the global edge clamp in main.ts
+  // rather than a dedicated blocked rect.
+  blocked: [
+    { x: 0, y: 0, w: 335, h: 565 }, // the fireplace, anvil and stool
+    { x: 335, y: 0, w: 520, h: 590 }, // the wall, hanging tools, the workbench and Ted behind it
+    { x: 855, y: 0, w: 230, h: 490 }, // shelves, baskets and the barrel with the cat
+    { x: 0, y: 0, w: 14, h: TOOLSHOP_INTERIOR_H },
+    { x: TOOLSHOP_INTERIOR_W - 14, y: 0, w: 14, h: TOOLSHOP_INTERIOR_H },
+  ],
+  zones: [
+    // Bigger than the norm and with its own longer reach, so browsing the stock
+    // doesn't need lining up right against the desk -- most of the open floor in
+    // front of it works.
+    { x: 430, y: 480, w: 340, h: 90, id: "counter", label: "Tool counter", reach: 150 },
+    { x: 1140, y: 480, w: 140, h: 140, id: "exit", label: "Village", to: "world" }, // the door
+  ],
+};
 
 /**
  * The seed shop is two scenes, not one. Walking through the village door leads to
@@ -549,6 +554,7 @@ export const SCENES: Record<SceneId, Scene> = {
   world,
   farm,
   toolshop,
+  toolshopcloseup,
   seedshop,
   seedshopinterior,
 };

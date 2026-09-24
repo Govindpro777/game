@@ -1,7 +1,7 @@
 import { CROP_IDS, CROPS, type CropId } from './data/crops'
 import { TOOL_IDS, type ToolId } from './data/tools'
 
-export type SceneId = 'world' | 'farm' | 'toolshop' | 'seedshop' | 'seedshopinterior'
+export type SceneId = 'world' | 'farm' | 'toolshop' | 'toolshopcloseup' | 'seedshop' | 'seedshopinterior'
 
 export type Plot = {
   tilled: boolean
@@ -27,6 +27,7 @@ export type Save = {
   /** How many times Bao has confirmed "yes, met Ted" to Faye. Reaching 2 retires
    * the "did you meet Ted?" return-visit script in favour of the steady-state one. */
   metTedConfirms: number
+  seenToolShopIntro: boolean
   savedAt: number
 }
 
@@ -55,6 +56,7 @@ export function freshSave(): Save {
     unlimited: true,
     seenSeedShopIntro: false,
     metTedConfirms: 0,
+    seenToolShopIntro: false,
     savedAt: Date.now(),
   }
 }

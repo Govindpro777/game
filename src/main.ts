@@ -2,7 +2,10 @@ import { ALL, load, img, crop as cropImg, nature, ground as groundTex } from './
 import {
   axis, debugKeys, digitPressed, endFrame, initInput, interactPressed, justPressed, stick, touchRun,
 } from './core/input'
-import { FIRST_VISIT, RETURN_VISIT, RETURN_VISIT_STEADY } from './data/dialogue'
+import {
+  FIRST_VISIT, RETURN_VISIT, RETURN_VISIT_STEADY,
+  TOOL_FIRST_VISIT, TOOL_INTERIOR_GREETING, TOOL_RETURN_VISIT,
+} from './data/dialogue'
 import { closeDialogue, dialogueInteract, dialogueMove, isDialogueOpen, openDialogue } from './dialogue'
 import { CROPS, CROP_IDS } from './data/crops'
 import { TOOLS, TOOL_IDS, type ToolId } from './data/tools'
@@ -198,6 +201,40 @@ const FAYE_RADIUS = 120
  * the chat once per approach instead of every frame they stay in range. */
 let nearFaye = false
 
+/**
+ * Ted greets the player once they walk up to him in the tool shop yard -- the same
+ * proximity pattern as talkToFaye() above, just with a much shorter script (see
+ * data/dialogue.ts).
+ */
+function talkToTed() {
+  const first = !state.seenToolShopIntro
+  const script = first ? TOOL_FIRST_VISIT : TOOL_RETURN_VISIT
+  openDialogue(script, (outcome) => {
+    if (first && outcome) state.seenToolShopIntro = true
+    save()
+    goto(outcome === 'enter' ? 'toolshop' : 'world')
+  })
+}
+
+/** Roughly where Ted stands outside the shop in toolshop-closeup.jpg. */
+const TED_POS = { x: 622, y: 352 }
+const TED_RADIUS = 95
+let nearTed = false
+
+/**
+ * Inside the shop, walking up to Ted at the workbench plays a single dismissible
+ * line -- not a branching conversation, and not a gate on anything: the counter
+ * zone is what actually opens the buy/upgrade panel, same as before.
+ */
+function greetTedInside() {
+  openDialogue(TOOL_INTERIOR_GREETING, () => {})
+}
+
+/** Open floor in front of the workbench inside toolshop-interior.jpg. */
+const TED_INSIDE_POS = { x: 600, y: 525 }
+const TED_INSIDE_RADIUS = 145
+let nearTedInside = false
+
 let transitioning = false
 
 /**
@@ -217,12 +254,16 @@ async function goto(id: SceneId, instant = false) {
   if (instant) {
     land()
     nearFaye = false
+    nearTed = false
+    nearTedInside = false
     return
   }
   transitioning = true
   await fade(true)
   land()
   nearFaye = false
+  nearTed = false
+  nearTedInside = false
   await fade(false)
   transitioning = false
 }
@@ -507,9 +548,24 @@ function groundOf(s: Scene) {
  * Zoom that keeps a steady world scale but never lets the scene fall short of the
  * window, so the canvas always fills it with no letterboxing. Snapped to quarter
  * steps to keep the pixel art from shimmering.
+ *
+ * A `maxZoom`-capped scene takes a different path: `cover`'s width term alone can
+ * still force more zoom than the scene's own height can afford on a wide-but-short
+ * window (see toolshop's comment in scenes.ts) -- capping only against `fit` still
+ * left `cover` as an un-droppable floor, so the crop came right back on any window
+ * a little short of the one this was tested against. For these scenes, keeping the
+ * full height in frame matters more than covering the full width, so width
+ * coverage is dropped and the zoom is floored (not ceiled) to never overshoot past
+ * exactly fitting the scene's height -- an unusually wide window may show a
+ * sliver of background at the sides instead, which reads far better than cropping
+ * the room itself.
  */
 function sceneZoom() {
   const fit = Math.min(view.w / TARGET.w, view.h / TARGET.h)
+  if (scene.maxZoom) {
+    const heightFit = view.h / scene.h
+    return Math.floor(Math.max(heightFit, Math.min(fit, scene.maxZoom)) * 4) / 4
+  }
   const cover = Math.max(view.w / scene.w, view.h / scene.h)
   return Math.ceil(Math.max(fit, cover) * 4) / 4
 }
@@ -520,7 +576,7 @@ function drawScene() {
   const worldW = view.w / z
   const worldH = view.h / z
 
-  ctx.fillStyle = '#1b2416'
+  ctx.fillStyle = scene.bg ?? '#1b2416'
   ctx.fillRect(0, 0, view.w, view.h)
 
   camX = Math.max(0, Math.min(scene.w - worldW, player.x - worldW / 2))
@@ -701,6 +757,16 @@ function frame(now: number) {
       const closeToFaye = dist(FAYE_POS.x, FAYE_POS.y) < FAYE_RADIUS
       if (closeToFaye && !nearFaye) talkToFaye()
       nearFaye = closeToFaye
+    }
+    if (scene.id === 'toolshopcloseup') {
+      const closeToTed = dist(TED_POS.x, TED_POS.y) < TED_RADIUS
+      if (closeToTed && !nearTed) talkToTed()
+      nearTed = closeToTed
+    }
+    if (scene.id === 'toolshop') {
+      const closeToTedInside = dist(TED_INSIDE_POS.x, TED_INSIDE_POS.y) < TED_INSIDE_RADIUS
+      if (closeToTedInside && !nearTedInside) greetTedInside()
+      nearTedInside = closeToTedInside
     }
   } else if (modalOpen() && justPressed('escape')) {
     closeModal()

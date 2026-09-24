@@ -7,7 +7,7 @@
  * ('enter' opens the shop, 'leave' leaves the player outside).
  */
 
-export type Speaker = 'faye' | 'bao'
+export type Speaker = 'faye' | 'bao' | 'ted'
 export type DialogueEnd = 'enter' | 'leave'
 
 export type Choice = {
@@ -35,6 +35,7 @@ export type DialogueScript = Record<string, DialogueNode>
 export const SPEAKERS: Record<Speaker, { name: string; role?: string; portrait: string }> = {
   faye: { name: 'Faye', role: 'Seed Shop Owner', portrait: '/portrait/faye.png' },
   bao: { name: 'Bao', portrait: '/portrait/bao.png' },
+  ted: { name: 'Ted', role: 'Tool Shop Owner', portrait: '/portrait/ted.png' },
 }
 
 /** Played once, the first time the player ever walks up to the seed shop. */
@@ -206,5 +207,59 @@ export const RETURN_VISIT_STEADY: DialogueScript = {
       { label: 'Yes', end: 'enter' },
       { label: 'No', end: 'leave' },
     ],
+  },
+}
+
+/**
+ * Conversation with Ted outside the tool shop. Much shorter than Faye's -- just
+ * enough to introduce him and offer a way in, not a full branching script.
+ */
+
+/** Played once, the first time the player ever walks up to the tool shop. */
+export const TOOL_FIRST_VISIT: DialogueScript = {
+  start: {
+    who: 'ted',
+    text: 'Well now — you must be the new farmer in town. Name’s Ted. I run the tool shop.',
+    next: 'bao_intro',
+  },
+  bao_intro: {
+    who: 'bao',
+    text: 'Hi Ted, I’m Bao. Faye mentioned I should stop by.',
+    next: 'ted_offer',
+  },
+  ted_offer: {
+    who: 'ted',
+    text: 'Good, good. A farmer’s only as good as their tools — come on in and I’ll show you what I’ve got.',
+    next: 'bao_ok',
+  },
+  bao_ok: {
+    who: 'bao',
+    text: 'Sounds good to me.',
+    end: 'enter',
+  },
+}
+
+/** Every visit after the first: a short, simple check-in rather than a branching script. */
+export const TOOL_RETURN_VISIT: DialogueScript = {
+  start: {
+    who: 'ted',
+    text: 'Back again? Come in and take a look whenever you like.',
+    choices: [
+      { label: 'Yes', end: 'enter' },
+      { label: 'Not now', end: 'leave' },
+    ],
+  },
+}
+
+/**
+ * A single dismissible line, not a branching conversation -- plays once per
+ * approach when the player walks up to Ted at the workbench inside the shop
+ * (see nearTedInside in main.ts). There's nothing to decide here; the counter
+ * itself is what actually opens the buy/upgrade panel.
+ */
+export const TOOL_INTERIOR_GREETING: DialogueScript = {
+  start: {
+    who: 'ted',
+    text: 'Go on, have a look — everything on the bench is fair game.',
   },
 }
