@@ -51,6 +51,12 @@ export function initGestures(el: HTMLElement, h: GestureHandlers) {
 
   el.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
+    // CSS touch-action:none isn't honoured consistently in every embedded/preview
+    // browser context (some still hand the gesture to page scroll/overscroll, or
+    // synthesize a delayed compatibility mousedown afterwards) -- calling
+    // preventDefault on the pointer event itself is the actual cross-browser way
+    // to claim the touch, same as e.g. interact.js/Hammer.js do for map dragging.
+    e.preventDefault()
     // Throws if the pointer's already gone (e.g. a very fast tap) -- not worth losing the gesture over.
     try { el.setPointerCapture(e.pointerId) } catch { /* not capturable */ }
     if (!pts.size) h.start()
@@ -60,10 +66,11 @@ export function initGestures(el: HTMLElement, h: GestureHandlers) {
     vx = 0
     vy = 0
     lastT = performance.now()
-  })
+  }, { passive: false })
 
   el.addEventListener('pointermove', (e) => {
     if (!pts.has(e.pointerId)) return
+    e.preventDefault()
     pts.set(e.pointerId, local(e))
     const cur = sample()
     if (last) {
@@ -78,7 +85,7 @@ export function initGestures(el: HTMLElement, h: GestureHandlers) {
       lastT = now
     }
     last = cur
-  })
+  }, { passive: false })
 
   const up = (e: PointerEvent) => {
     if (!pts.delete(e.pointerId)) return
@@ -95,6 +102,12 @@ export function initGestures(el: HTMLElement, h: GestureHandlers) {
   }
   el.addEventListener('pointerup', up)
   el.addEventListener('pointercancel', up)
+
+  // Belt-and-braces fallback: if something upstream still intercepts Pointer
+  // Events (a wrapping preview iframe's own scroll handling, for instance), at
+  // least stop the page itself from scrolling/bouncing under the drag.
+  el.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false })
+  el.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false })
 
   el.addEventListener('wheel', (e) => {
     e.preventDefault()
