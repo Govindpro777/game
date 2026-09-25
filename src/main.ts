@@ -6,6 +6,7 @@ import {
   FIRST_VISIT, RETURN_VISIT, RETURN_VISIT_STEADY,
   TOOL_FIRST_VISIT, TOOL_INTERIOR_GREETING, TOOL_RETURN_VISIT,
 } from './data/dialogue'
+import { initGestures } from './core/gestures'
 import { closeDialogue, dialogueInteract, dialogueMove, isDialogueOpen, openDialogue } from './dialogue'
 import { CROPS, CROP_IDS } from './data/crops'
 import { TOOLS, TOOL_IDS, type ToolId } from './data/tools'
@@ -98,6 +99,17 @@ const player = {
 let scene: Scene = SCENES.world
 let camX = 0
 let camY = 0
+
+/**
+ * Where the camera looks, in world space (the centre of the screen). It follows
+ * the player until the map is dragged or zoomed (initGestures in core/gestures.ts),
+ * then stays put -- flinging on with momentum -- until the player moves again.
+ */
+const cam = { x: 0, y: 0, follow: true, dragging: false, vx: 0, vy: 0 }
+/** Pinch/wheel zoom as a multiple of sceneZoom(), remembered per scene. */
+const zoomMul = new Map<SceneId, number>()
+/** How far past the scene's normal zoom a pinch can go in. */
+const MAX_ZOOM_MUL = 2.5
 
 /**
  * Frame indices into player/f0..f8. **Every frame listed here has to face the same
@@ -265,6 +277,10 @@ async function goto(id: SceneId, instant = false, forceDefaultSpawn = false) {
     const back = !forceDefaultSpawn && id === 'world' ? WORLD_RETURN_POS[from] : undefined
     player.x = back?.x ?? scene.spawn.x
     player.y = back?.y ?? scene.spawn.y
+    cam.x = player.x
+    cam.y = player.y
+    cam.follow = true
+    cam.vx = cam.vy = 0
     closeModal()
   }
   if (instant) {
@@ -586,8 +602,81 @@ function sceneZoom() {
   return Math.ceil(Math.max(fit, cover) * 4) / 4
 }
 
+/**
+ * Pinch/wheel zoom range around sceneZoom(). Zooming out stops once the scene
+ * exactly covers the window (never below what sceneZoom() itself would pick for a
+ * `maxZoom` scene that already shows gaps), so a zoom-out never opens up empty
+ * space around the map.
+ */
+function zoomBounds() {
+  const base = sceneZoom()
+  const cover = Math.max(view.w / scene.w, view.h / scene.h)
+  return { base, min: Math.min(base, cover), max: base * MAX_ZOOM_MUL }
+}
+
+function currentZoom() {
+  const { base, min, max } = zoomBounds()
+  return Math.max(min, Math.min(max, base * (zoomMul.get(scene.id) ?? 1)))
+}
+
+function zoomAbout(factor: number, sx: number, sy: number) {
+  const z0 = view.zoom
+  const { base, min, max } = zoomBounds()
+  const z1 = Math.max(min, Math.min(max, z0 * factor))
+  if (z1 === z0) return
+  // Keep the world point under the fingers (or cursor) fixed on screen.
+  const wx = camX + sx / z0
+  const wy = camY + sy / z0
+  zoomMul.set(scene.id, z1 / base)
+  cam.x = wx - sx / z1 + view.w / (2 * z1)
+  cam.y = wy - sy / z1 + view.h / (2 * z1)
+  camX = cam.x - view.w / (2 * z1)
+  camY = cam.y - view.h / (2 * z1)
+  view.zoom = z1
+  cam.follow = false
+}
+
+function initCameraGestures() {
+  initGestures(canvas, {
+    start: () => { cam.dragging = true; cam.vx = cam.vy = 0 },
+    pan: (dx, dy) => {
+      cam.x -= dx / view.zoom
+      cam.y -= dy / view.zoom
+      cam.follow = false
+    },
+    zoom: zoomAbout,
+    end: (vx, vy) => {
+      cam.dragging = false
+      cam.vx = -vx / view.zoom
+      cam.vy = -vy / view.zoom
+    },
+  })
+}
+
+/** Follow the player, or coast on a fling -- never while a finger is down. */
+function stepCamera(dt: number) {
+  if (cam.dragging) return
+  // move() only runs when nothing's open, so `moving` can be stale under a dialogue.
+  if (player.moving && !uiBusy() && !transitioning) {
+    cam.follow = true
+    cam.vx = cam.vy = 0
+  }
+  if (cam.follow) {
+    const k = 1 - Math.exp(-dt * 10)
+    cam.x += (player.x - cam.x) * k
+    cam.y += (player.y - cam.y) * k
+  } else if (cam.vx || cam.vy) {
+    cam.x += cam.vx * dt
+    cam.y += cam.vy * dt
+    const decay = Math.exp(-dt * 5)
+    cam.vx *= decay
+    cam.vy *= decay
+    if (Math.hypot(cam.vx, cam.vy) < 5) cam.vx = cam.vy = 0
+  }
+}
+
 function drawScene() {
-  const z = sceneZoom()
+  const z = currentZoom()
   view.zoom = z
   const worldW = view.w / z
   const worldH = view.h / z
@@ -595,8 +684,16 @@ function drawScene() {
   ctx.fillStyle = scene.bg ?? '#1b2416'
   ctx.fillRect(0, 0, view.w, view.h)
 
-  camX = Math.max(0, Math.min(scene.w - worldW, player.x - worldW / 2))
-  camY = Math.max(0, Math.min(scene.h - worldH, player.y - worldH / 2))
+  camX = Math.max(0, Math.min(scene.w - worldW, cam.x - worldW / 2))
+  camY = Math.max(0, Math.min(scene.h - worldH, cam.y - worldH / 2))
+  // Write the clamp back so dragging past an edge doesn't bank up distance that
+  // has to be dragged back before the map moves again, and a fling stops dead.
+  const cx = camX + worldW / 2
+  const cy = camY + worldH / 2
+  if (cx !== cam.x) cam.vx = 0
+  if (cy !== cam.y) cam.vy = 0
+  cam.x = cx
+  cam.y = cy
   camX = Math.round(camX * z) / z
   camY = Math.round(camY * z) / z
 
@@ -789,6 +886,7 @@ function frame(now: number) {
   }
 
   grow(dtMs)
+  stepCamera(dt)
   drawScene()
   updateLabels()
   showPrompt(
@@ -958,6 +1056,7 @@ async function boot() {
   initInput()
   initUi({ selectTool, cycleSeed, onReset: backToStart })
   buildTouch()
+  initCameraGestures()
   watchSaveExpiry()
   await load(ALL)
   ensureResources()
@@ -969,6 +1068,8 @@ async function boot() {
     ;(window as unknown as Record<string, unknown>).__dev = {
       goto,
       player,
+      cam,
+      view,
       state,
       scenes: SCENES,
       blockedAt,

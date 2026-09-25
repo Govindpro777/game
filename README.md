@@ -19,6 +19,14 @@ Then open http://localhost:5173.
 | `1`–`5` | Select hoe / watering can / axe / pickaxe / shovel |
 | `Q` | Cycle through the seeds you own |
 | `Esc` | Close a shop panel, or walk away from a conversation |
+| Drag the map (one finger or mouse) | Look around; a quick flick keeps it gliding |
+| Pinch (two fingers), mouse wheel or trackpad pinch | Zoom in and out around your fingers/cursor |
+
+The camera works like Clash of Clans: dragging or zooming lets it roam freely and
+it stays where you leave it, until you walk again -- then it eases back onto the
+player. Zoom is remembered per scene, runs from "the map just fills the screen" up
+to 2.5× closer, and a second finger on the map still pans while your thumb is on
+the joystick (`src/core/gestures.ts`).
 
 A village landmark's floating label (Home, Seed shop, Tool shop, Farm) also lights up
 and becomes clickable/tappable once you're close enough — clicking it does the same
