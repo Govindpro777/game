@@ -39,6 +39,8 @@ export type Scene = {
   mask?: string;
   /** Sprite scale for the player in this scene; the village is drawn further out. */
   playerScale?: number;
+  /** Multiplies the player's move speed in this scene; omit for the normal speed. */
+  speedMul?: number;
   /**
    * Caps how far `sceneZoom()` will push past the minimum needed to cover the
    * viewport (never below that minimum -- coverage always wins, so this only ever
@@ -230,6 +232,7 @@ const world: Scene = {
   h: MAP_H,
   cache: false,
   mask: "/scene/walkmask.png",
+  speedMul: 0.8, // the map reads large and the character small here, so full speed felt a bit too brisk
   playerScale: 0.45,
   spawn: { x: 550, y: 628 }, // in front of Home
   ground: (c) => c.drawImage(img("/scene/village.png"), 0, 0, MAP_W, MAP_H),

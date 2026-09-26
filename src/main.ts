@@ -351,7 +351,7 @@ function blockedAt(x: number, y: number) {
 
 function move(dt: number) {
   const a = axis()
-  const speedPxPerSec = a.run ? 179 : 110.7
+  const speedPxPerSec = (a.run ? 179 : 110.7) * (scene.speedMul ?? 1)
   const speed = speedPxPerSec * dt
   player.moving = a.x !== 0 || a.y !== 0
 
