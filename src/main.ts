@@ -32,6 +32,19 @@ const PLAYER_S = 0.6
 const FRAME_W = 72
 const FRAME_H = 178
 const REACH = 96
+
+/**
+ * Tunes the walk cycle to how fast the character is actually covering ground,
+ * relative to its own on-screen height -- otherwise a flat cadence plays the
+ * same regardless of running (vs walking) or which scene's playerScale the
+ * sprite is drawn at, and the legs visibly can't keep up with how far the body
+ * moves. That reads as the feet sliding/moonwalking, worst in a scene with a
+ * much bigger playerScale (e.g. the seed shop interior's 1.4 vs the ~0.5
+ * fallback elsewhere), where the same leg-swap covers a far smaller fraction
+ * of the character's own height. Chosen so plain walking at the fallback scale
+ * (PLAYER_S) still plays at the original, already-tuned 7.5 cycles/s.
+ */
+const STRIDE_K = (7.5 * FRAME_H * PLAYER_S) / 110.7
 const RESPAWN_MS = 75_000
 
 type Mask = { w: number; h: number; bits: Uint8Array }
@@ -338,7 +351,8 @@ function blockedAt(x: number, y: number) {
 
 function move(dt: number) {
   const a = axis()
-  const speed = (a.run ? 179 : 110.7) * dt
+  const speedPxPerSec = a.run ? 179 : 110.7
+  const speed = speedPxPerSec * dt
   player.moving = a.x !== 0 || a.y !== 0
 
   if (Math.abs(a.x) > Math.abs(a.y)) player.face = a.x > 0 ? 'right' : 'left'
@@ -352,7 +366,9 @@ function move(dt: number) {
   player.x = Math.max(24, Math.min(scene.w - 24, player.x))
   player.y = Math.max(46, Math.min(scene.h - 12, player.y))
 
-  player.anim = player.moving ? player.anim + dt * 7.5 : 0
+  const ps = scene.playerScale ?? PLAYER_S
+  const animRate = (STRIDE_K * speedPxPerSec) / (FRAME_H * ps)
+  player.anim = player.moving ? player.anim + dt * animRate : 0
 }
 
 /* ---------------- interaction ---------------- */
