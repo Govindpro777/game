@@ -4,7 +4,7 @@ import {
 } from './core/input'
 import {
   FIRST_VISIT, RETURN_VISIT, RETURN_VISIT_STEADY,
-  TOOL_FIRST_VISIT, TOOL_INTERIOR_GREETING, TOOL_RETURN_VISIT,
+  TOOL_FIRST_VISIT, TOOL_RETURN_VISIT,
 } from './data/dialogue'
 import { initGestures } from './core/gestures'
 import { closeDialogue, dialogueInteract, dialogueMove, isDialogueOpen, openDialogue } from './dialogue'
@@ -228,8 +228,10 @@ let nearFaye = false
 
 /**
  * Ted greets the player once they walk up to him in the tool shop yard -- the same
- * proximity pattern as talkToFaye() above, just with a much shorter script (see
- * data/dialogue.ts).
+ * proximity pattern as talkToFaye() above. Styled differently from every other
+ * conversation in the game (the `corner` option): a small plain narration box in
+ * the top-left, no portrait or name plate, speaker names written into the line
+ * itself -- see the scripts themselves in data/dialogue.ts for why.
  */
 function talkToTed() {
   const first = !state.seenToolShopIntro
@@ -238,27 +240,13 @@ function talkToTed() {
     if (first && outcome) state.seenToolShopIntro = true
     save()
     goto(outcome === 'enter' ? 'toolshop' : 'world')
-  })
+  }, { corner: true })
 }
 
 /** Roughly where Ted stands outside the shop in toolshop-closeup.jpg. */
-const TED_POS = { x: 622, y: 352 }
-const TED_RADIUS = 95
+const TED_POS = { x: 785, y: 445 }
+const TED_RADIUS = 75
 let nearTed = false
-
-/**
- * Inside the shop, walking up to Ted at the workbench plays a single dismissible
- * line -- not a branching conversation, and not a gate on anything: the counter
- * zone is what actually opens the buy/upgrade panel, same as before.
- */
-function greetTedInside() {
-  openDialogue(TOOL_INTERIOR_GREETING, () => {})
-}
-
-/** Open floor in front of the workbench inside toolshop-interior.jpg. */
-const TED_INSIDE_POS = { x: 280, y: 560 }
-const TED_INSIDE_RADIUS = 160
-let nearTedInside = false
 
 let transitioning = false
 
@@ -268,10 +256,10 @@ let transitioning = false
  * at the world scene's own default spawn (in front of Home) every time.
  */
 const WORLD_RETURN_POS: Partial<Record<SceneId, { x: number; y: number }>> = {
-  seedshop: { x: 694, y: 660 },
-  seedshopinterior: { x: 694, y: 660 },
-  toolshopcloseup: { x: 1252, y: 884 },
-  toolshop: { x: 1252, y: 884 },
+  seedshop: { x: 690, y: 630 },
+  seedshopinterior: { x: 690, y: 630 },
+  toolshopcloseup: { x: 1300, y: 880 },
+  toolshop: { x: 1300, y: 880 },
 }
 
 /**
@@ -300,7 +288,6 @@ async function goto(id: SceneId, instant = false, forceDefaultSpawn = false) {
     land()
     nearFaye = false
     nearTed = false
-    nearTedInside = false
     return
   }
   transitioning = true
@@ -308,7 +295,6 @@ async function goto(id: SceneId, instant = false, forceDefaultSpawn = false) {
   land()
   nearFaye = false
   nearTed = false
-  nearTedInside = false
   await fade(false)
   transitioning = false
 }
@@ -610,12 +596,15 @@ function groundOf(s: Scene) {
  */
 function sceneZoom() {
   const fit = Math.min(view.w / TARGET.w, view.h / TARGET.h)
+  let z: number
   if (scene.maxZoom) {
     const heightFit = view.h / scene.h
-    return Math.floor(Math.max(heightFit, Math.min(fit, scene.maxZoom)) * 4) / 4
+    z = Math.floor(Math.max(heightFit, Math.min(fit, scene.maxZoom)) * 4) / 4
+  } else {
+    const cover = Math.max(view.w / scene.w, view.h / scene.h)
+    z = Math.ceil(Math.max(fit, cover) * 4) / 4
   }
-  const cover = Math.max(view.w / scene.w, view.h / scene.h)
-  return Math.ceil(Math.max(fit, cover) * 4) / 4
+  return scene.zoomBoost ? Math.round(z * scene.zoomBoost * 4) / 4 : z
 }
 
 /**
@@ -796,7 +785,10 @@ function drawScene() {
   for (const d of scene.decor) {
     const w = d.src.width * d.s
     const h = d.src.height * d.s
-    items.push({ y: d.sortY ?? d.y + h, draw: () => ctx.drawImage(d.src, d.x, d.y, w, h) })
+    const draw = d.flip
+      ? () => { ctx.save(); ctx.translate(d.x + w, d.y); ctx.scale(-1, 1); ctx.drawImage(d.src, 0, 0, w, h); ctx.restore() }
+      : () => ctx.drawImage(d.src, d.x, d.y, w, h)
+    items.push({ y: d.sortY ?? d.y + h, draw })
   }
 
   items.push({ y: player.y, draw: drawPlayer })
@@ -891,11 +883,6 @@ function frame(now: number) {
       const closeToTed = dist(TED_POS.x, TED_POS.y) < TED_RADIUS
       if (closeToTed && !nearTed) talkToTed()
       nearTed = closeToTed
-    }
-    if (scene.id === 'toolshop') {
-      const closeToTedInside = dist(TED_INSIDE_POS.x, TED_INSIDE_POS.y) < TED_INSIDE_RADIUS
-      if (closeToTedInside && !nearTedInside) greetTedInside()
-      nearTedInside = closeToTedInside
     }
   } else if (modalOpen() && justPressed('escape')) {
     closeModal()

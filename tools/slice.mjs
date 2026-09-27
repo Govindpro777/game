@@ -3,7 +3,8 @@
  *
  *   assets/sprite-sheet.png       -> ~60 named sprites in public/sprites/
  *   assets/tool-shop-building.png -> public/scene/toolshop.png
- *   assets/game-bg.jpeg           -> public/scene/village.png + walkmask.png (roads)
+ *   assets/new-game-bg.png        -> public/scene/village.png + walkmask.png (roads, via
+ *                                    roadmask.mjs with tools/masks/village.json)
  *   assets/village-map-old.png    -> the tree sprite (cut from the old painting)
  *   assets/seed-shop-girl.png     -> the seed shop's standing NPC (a 5x2 turnaround
  *                                    sheet; column 4, row 0's 3/4 pose, mirrored to face left)
@@ -26,9 +27,10 @@
  *                                    column 4, row 0's 3/4 pose, mirrored to face left, same
  *                                    convention as the seed shop's NPC)
  *   assets/tool-shop-avtar.png    -> public/portrait/ted.png, his dialogue portrait
- *   assets/Tool-shop-clodeup.jpeg -> public/scene/toolshop-closeup.jpg, the outdoor space in
- *                                    front of the shop the player walks into first -- Ted is
- *                                    baked into this art; talking to him is what leads inside
+ *   assets/new-tool-shop-closeup.png -> public/scene/toolshop-closeup.jpg + toolshop-closeup-
+ *                                    walkmask.png, the street outside the shop the player
+ *                                    walks into first; Ted stands there as a sprite, and
+ *                                    talking to him is what leads inside
  *   assets/Tool-shop-interior-2.jpeg-> public/scene/toolshop-interior.jpg, the walkable interior
  *                                    the conversation can send you into -- Ted is baked into
  *                                    this art too (see scenes.ts). Replaces the original
@@ -93,9 +95,9 @@ for (const [idx, name] of Object.entries(NAMES)) {
 
 /* 3. scene backgrounds */
 mkdirSync('public/scene', { recursive: true })
-await sharp('assets/game-bg.jpeg').png().toFile('public/scene/village.png')
+await sharp('assets/new-game-bg.png').png().toFile('public/scene/village.png')
 // Walkable road network, derived from the artwork's own colours (see roadmask.mjs).
-run('node tools/roadmask.mjs assets/game-bg.jpeg public/scene/walkmask.png "" 760 700')
+run('node tools/roadmask.mjs assets/new-game-bg.png public/scene/walkmask.png "" tools/masks/village.json')
 
 /* 4. trees and rocks, cut from artwork rather than the sheet (it has neither) */
 mkdirSync(`${OUT}/nature`, { recursive: true })
@@ -171,12 +173,10 @@ for (const [src, name] of [
    transition is a pure-CSS fade now, so there's no wipe texture to copy) */
 await sharp('assets/close-up-seed-shop.JPG').jpeg({ quality: 90 }).toFile('public/scene/seedshop-closeup.jpg')
 await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/scene/seedshop-interior.png')
-// Downscaled well below its native 1776x1104 -- the camera's fixed world-space fit
-// box shows a constant number of native pixels regardless of a scene's own
-// resolution, so a smaller source image reads as more zoomed out (more of the
-// yard visible) and the player, drawn at a fixed sprite-sheet size, reads smaller
-// next to it.
-await sharp('assets/Tool-shop-clodeup.jpeg').resize({ width: 960 }).jpeg({ quality: 90 }).toFile('public/scene/toolshop-closeup.jpg')
+// Native size (1200x607): scenes.ts uses these pixels as world coordinates, and the
+// walk mask below is derived from the same image so the two line up 1:1.
+await sharp('assets/new-tool-shop-closeup.png').removeAlpha().jpeg({ quality: 90 }).toFile('public/scene/toolshop-closeup.jpg')
+run('node tools/roadmask.mjs assets/new-tool-shop-closeup.png public/scene/toolshop-closeup-walkmask.png "" tools/masks/toolshop-closeup.json')
 await sharp('assets/Tool-shop-interior-2.jpeg').jpeg({ quality: 90 }).toFile('public/scene/toolshop-interior.jpg')
 
 /* 9. small UI icons, used as-is */

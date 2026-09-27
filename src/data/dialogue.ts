@@ -211,55 +211,69 @@ export const RETURN_VISIT_STEADY: DialogueScript = {
 }
 
 /**
- * Conversation with Ted outside the tool shop. Much shorter than Faye's -- just
- * enough to introduce him and offer a way in, not a full branching script.
+ * Conversation with Ted outside the tool shop. Unlike every other conversation in
+ * the game, this one is shown in the small plain "corner" narration box (see the
+ * `corner` option on openDialogue() in dialogue.ts) rather than the portrait +
+ * name-plate box -- so no node here sets `who`; speakers are written directly
+ * into the line instead, the way a visual-novel narration box does it.
  */
 
 /** Played once, the first time the player ever walks up to the tool shop. */
 export const TOOL_FIRST_VISIT: DialogueScript = {
   start: {
-    who: 'ted',
-    text: 'Well now — you must be the new farmer in town. Name’s Ted. I run the tool shop.',
-    next: 'bao_intro',
+    text: 'Bao (thinking): Ok, Guru said I need tools. The shovel he gave me looks like it will fall apart in less than a minute…',
+    next: 'arrive',
   },
-  bao_intro: {
-    who: 'bao',
-    text: 'Hi Ted, I’m Bao. Faye mentioned I should stop by.',
-    next: 'ted_offer',
+  arrive: {
+    text: 'Bao: What’s this place? Ted’s… Ted’s Tools! Ok, here it is.',
+    next: 'prompt',
   },
-  ted_offer: {
-    who: 'ted',
-    text: 'Good, good. A farmer’s only as good as their tools — come on in and I’ll show you what I’ve got.',
-    next: 'bao_ok',
-  },
-  bao_ok: {
-    who: 'bao',
-    text: 'Sounds good to me.',
-    end: 'enter',
-  },
-}
-
-/** Every visit after the first: a short, simple check-in rather than a branching script. */
-export const TOOL_RETURN_VISIT: DialogueScript = {
-  start: {
-    who: 'ted',
-    text: 'Back again? Come in and take a look whenever you like.',
+  prompt: {
+    text: 'Enter Ted’s Tools?',
     choices: [
       { label: 'Yes', end: 'enter' },
-      { label: 'Not now', end: 'leave' },
+      { label: 'No', to: 'confirm' },
     ],
+  },
+  confirm: {
+    text: 'You sure? That shovel Guru gave you wouldn’t cut through butter.',
+    choices: [
+      { label: 'Yes', end: 'enter' },
+      { label: 'No', to: 'decline' },
+    ],
+  },
+  decline: {
+    text: 'Ok, Bao. He’s open tomorrow.',
+    next: 'explore',
+  },
+  explore: {
+    text: 'Bao started to explore the town.',
+    end: 'leave',
   },
 }
 
-/**
- * A single dismissible line, not a branching conversation -- plays once per
- * approach when the player walks up to Ted at the workbench inside the shop
- * (see nearTedInside in main.ts). There's nothing to decide here; the counter
- * itself is what actually opens the buy/upgrade panel.
- */
-export const TOOL_INTERIOR_GREETING: DialogueScript = {
+/** Every visit after the first: skips Bao's backstory, keeps the same prompt. */
+export const TOOL_RETURN_VISIT: DialogueScript = {
   start: {
-    who: 'ted',
-    text: 'Go on, have a look — everything on the bench is fair game.',
+    text: 'Enter Ted’s Tools?',
+    choices: [
+      { label: 'Yes', end: 'enter' },
+      { label: 'No', to: 'confirm' },
+    ],
+  },
+  confirm: {
+    text: 'You sure? That shovel Guru gave you wouldn’t cut through butter.',
+    choices: [
+      { label: 'Yes', end: 'enter' },
+      { label: 'No', to: 'decline' },
+    ],
+  },
+  decline: {
+    text: 'Ok, Bao. He’s open tomorrow.',
+    next: 'explore',
+  },
+  explore: {
+    text: 'Bao continues to explore the town.',
+    end: 'leave',
   },
 }

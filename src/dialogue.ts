@@ -39,6 +39,10 @@ const nextEl = el.querySelector('.dlg-next') as HTMLElement
 let script: DialogueScript = {}
 let key = 'start'
 let onEnd: ((outcome: DialogueEnd | null, flags: Set<string>) => void) | null = null
+/** True for a conversation opened with `{ corner: true }`: shown in a small plain
+ * top-left narration box instead of the usual portrait + name-plate one, and never
+ * shows a portrait/plate even for a node that sets `who`. See main.ts's talkToTed(). */
+let cornerMode = false
 /** Which answer the keyboard has highlighted; -1 when the line has no choices. */
 let focused = -1
 /** Every node's `flag` seen so far this conversation, handed to `onEnd` -- lets the
@@ -52,7 +56,7 @@ function render() {
   if (!n) return closeDialogue(null)
   if (n.flag) flags.add(n.flag)
 
-  if (n.who) {
+  if (n.who && !cornerMode) {
     const s = SPEAKERS[n.who]
     portraitEl.src = s.portrait
     portraitEl.hidden = false
@@ -97,11 +101,17 @@ function pick(c: Choice) {
 
 export const isDialogueOpen = () => !el.hidden
 
-export function openDialogue(s: DialogueScript, done: (outcome: DialogueEnd | null, flags: Set<string>) => void) {
+export function openDialogue(
+  s: DialogueScript,
+  done: (outcome: DialogueEnd | null, flags: Set<string>) => void,
+  opts?: { corner?: boolean },
+) {
   script = s
   key = 'start'
   onEnd = done
   flags = new Set()
+  cornerMode = !!opts?.corner
+  el.classList.toggle('corner', cornerMode)
   el.hidden = false
   root.classList.add('dialogue')
   render()

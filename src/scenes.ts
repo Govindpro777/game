@@ -27,6 +27,8 @@ export type Decor = {
    * Set this to where the solid structure actually ends instead.
    */
   sortY?: number;
+  /** Draw mirrored left-to-right, e.g. so an NPC faces the way the player walks up from. */
+  flip?: boolean;
 };
 
 export type Scene = {
@@ -50,6 +52,10 @@ export type Scene = {
    * the top; capping it here keeps more of the room in frame instead.
    */
   maxZoom?: number;
+  /** Multiplies the normal zoom (whatever sceneZoom() would otherwise pick) to push
+   * the camera in closer on a scene that should read tighter/more intimate than the
+   * "fit a 960x600 box, then cover" default gives it. Omit for the normal zoom. */
+  zoomBoost?: number;
   /**
    * Canvas fill colour behind the scene, before anything is drawn -- only matters
    * where the scene doesn't fully cover the viewport (normally nowhere, but a
@@ -222,8 +228,12 @@ function fenceCol(
 
 /* ---------------- world ---------------- */
 
-const MAP_W = 1575;
-const MAP_H = 998;
+// The village is new-game-bg.png at its native size, so world coordinates are
+// just that image's pixels -- the zone/NPC positions below were read straight off
+// a coordinate grid over it, and walkmask.png (derived from the same art by
+// tools/roadmask.mjs with tools/masks/village.json) lines up 1:1.
+const MAP_W = 1536;
+const MAP_H = 1024;
 
 const world: Scene = {
   id: "world",
@@ -232,70 +242,74 @@ const world: Scene = {
   h: MAP_H,
   cache: false,
   mask: "/scene/walkmask.png",
+  zoomBoost: 1.1, // a touch closer than the plain cover fit gives
   speedMul: 0.8, // the map reads large and the character small here, so full speed felt a bit too brisk
-  playerScale: 0.45,
-  spawn: { x: 550, y: 628 }, // in front of Home
+  // People are drawn smaller in this painting than the old one (a door is ~60px
+  // tall here), so Bao is sized to stand about door height.
+  playerScale: 0.32,
+  spawn: { x: 535, y: 620 }, // on the open road in front of Home, clear of the fence corner
   ground: (c) => c.drawImage(img("/scene/village.png"), 0, 0, MAP_W, MAP_H),
   // Stand permanently at their shop's gate: decorative only, not a zone or NPC AI.
+  // Positions are the sprite's own top-left draw corner, not its feet -- checked
+  // against the art so the feet (x + w/2, y + h) land cleanly on open road, clear
+  // of the bushes either shop is planted next to.
   decor: [
-    { src: npc("seedshop_girl"), x: 745, y: 580, s: 0.18 },
-    { src: npc("toolshop_owner"), x: 1285, y: 812, s: 0.22 }, // on the path right in front of the tool shop's door
+    { src: npc("seedshop_girl"), x: 720, y: 585, s: 0.12 }, // feet on the seed shop's doorstep
+    { src: npc("toolshop_owner"), x: 1270, y: 820, s: 0.166 }, // on the road right in front of the tool shop's door
   ],
   blocked: [],
   zones: [
-    { x: 470, y: 548, w: 90, h: 52, id: "home", label: "Home" },
+    // The blue-roofed cottage by the fountain; its front garden meets the road here.
+    { x: 460, y: 555, w: 90, h: 52, id: "home", label: "Home" },
+    // The doorstep of the big glasshouse ("SEEDER").
     {
-      x: 646,
-      y: 620,
+      x: 650,
+      y: 585,
       w: 96,
       h: 54,
       id: "seedshop",
       label: "Seed shop",
       to: "seedshop",
     },
+    // The doorstep under the "TOOL SHOP" sign.
     {
-      x: 1204,
-      y: 782,
+      x: 1262,
+      y: 825,
       w: 96,
       h: 54,
       id: "toolshop",
       label: "Tool shop",
       to: "toolshopcloseup",
     },
+    // Where the cobbled road ends at the fields' own dirt paths, by the vegetable cart.
     {
-      x: 452,
-      y: 664,
+      x: 430,
+      y: 745,
       w: 90,
       h: 56,
       id: "farm",
       label: "Farm",
       to: "farm",
-      lx: 300,
-      ly: 700,
     },
   ],
 };
 
 /**
  * The tool shop is two scenes, not one -- the same pattern as the seed shop below.
- * Walking through the village door leads to `toolshopcloseup`, the yard outside
- * (one flat painting with Ted baked into the art, standing by the door); talking to
- * him only starts once you've actually walked up to him (see the proximity check
- * in main.ts). Saying yes sends you on into `toolshop` -- a second flat painting,
- * this time the shop's interior, Ted baked into the art again behind the
- * workbench -- where you actually buy and upgrade tools and can walk back out to
- * the village through its door.
+ * Walking through the village door leads to `toolshopcloseup`, the street outside
+ * (one flat painting, Ted standing on his doorstep as a sprite); talking to him
+ * only starts once you've actually walked up to him (see the proximity check in
+ * main.ts). Saying yes sends you on into `toolshop` -- a second flat painting,
+ * this time the shop's interior, Ted baked into the art behind his billing desk --
+ * where you actually buy and upgrade tools and can walk back out to the village
+ * through its door.
  */
-// Downscaled well below the source art's native 1776x1104 (see slice.mjs) -- the
-// camera's fixed world-space fit box shows a constant number of native pixels
-// regardless of a scene's own resolution, so shrinking the art further zooms the
-// camera out relative to the yard, and a smaller playerScale keeps Bao from
-// towering over it.
-// 960 wide, and its true proportional height (see slice.mjs) -- every blocked rect
-// below was measured directly off a coordinate-grid overlay of this exact image, so
-// they track real art features instead of drifting further with every resize.
-const TOOLSHOP_CLOSEUP_W = 960;
-const TOOLSHOP_CLOSEUP_H = 597;
+// new-tool-shop-closeup.png at its native size. Walking is confined to the roads
+// by a mask derived from the art itself (tools/masks/toolshop-closeup.json), the
+// same way the village is -- the roads here are curved and full of props, which
+// hand-placed rectangles can't follow.
+const TOOLSHOP_CLOSEUP_W = 1200;
+const TOOLSHOP_CLOSEUP_H = 607;
 
 const toolshopcloseup: Scene = {
   id: "toolshopcloseup",
@@ -303,8 +317,12 @@ const toolshopcloseup: Scene = {
   w: TOOLSHOP_CLOSEUP_W,
   h: TOOLSHOP_CLOSEUP_H,
   cache: true,
-  playerScale: 0.7,
-  spawn: { x: 94, y: 384 }, // on the path by the lamppost, far from Ted -- walking up to him or the door is what starts the chat
+  mask: "/scene/toolshop-closeup-walkmask.png",
+  // The shop door is ~60px tall in this painting; this puts Bao a bit taller than
+  // door height, which reads better up close than true-to-scale did.
+  playerScale: 0.5,
+  zoomBoost: 1.2, // tighter, more intimate framing of the street than the plain cover fit gives
+  spawn: { x: 400, y: 420 }, // the crossroads, well back from Ted -- walking up to him is what starts the chat
   ground: (c) =>
     c.drawImage(
       img("/scene/toolshop-closeup.jpg"),
@@ -313,20 +331,10 @@ const toolshopcloseup: Scene = {
       TOOLSHOP_CLOSEUP_W,
       TOOLSHOP_CLOSEUP_H,
     ),
-  decor: [],
-  blocked: [
-    { x: 0, y: 0, w: TOOLSHOP_CLOSEUP_W, h: 141 }, // garden stalls, the fence and the shop's roofline
-    { x: 413, y: 0, w: 197, h: 112 }, // the river
-    { x: 375, y: 178, w: 103, h: 103 }, // the bush beside the shop sign
-    { x: 534, y: 141, w: 75, h: 253 }, // the wall left of the door
-    { x: 722, y: 141, w: 122, h: 253 }, // the wall right of the door
-    { x: 844, y: 0, w: 116, h: 394 }, // the chimney
-    { x: 455, y: 253, w: 108, h: 141 }, // the tool rack leaning against the shop wall
-    { x: 839, y: 366, w: 84, h: 84 }, // the barrel by the door
-    { x: 0, y: TOOLSHOP_CLOSEUP_H - 14, w: TOOLSHOP_CLOSEUP_W, h: 14 },
-    { x: 0, y: 0, w: 14, h: TOOLSHOP_CLOSEUP_H },
-    { x: TOOLSHOP_CLOSEUP_W - 14, y: 0, w: 14, h: TOOLSHOP_CLOSEUP_H },
-  ],
+  // This painting has no Ted in it, unlike the old one -- he stands on the
+  // doorstep as a sprite, mirrored to face the road the player walks up.
+  decor: [{ src: npc("toolshop_owner"), x: 769, y: 366, s: 0.27 }],
+  blocked: [],
   zones: [],
 };
 

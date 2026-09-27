@@ -52,6 +52,7 @@ export const SPRITES = {
   scenes: [
     '/scene/village.png', '/scene/seedshop-closeup.jpg', '/scene/seedshop-interior.png',
     '/scene/toolshop-closeup.jpg', '/scene/toolshop-interior.jpg', '/scene/walkmask.png',
+    '/scene/toolshop-closeup-walkmask.png',
   ],
 }
 

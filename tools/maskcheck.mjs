@@ -9,11 +9,13 @@ import sharp from 'sharp'
 import { readFileSync } from 'node:fs'
 
 const src = readFileSync('src/scenes.ts', 'utf8')
-const world = src.slice(src.indexOf('const world: Scene'), src.indexOf('shop scenes'))
+const start = src.indexOf('const world: Scene')
+const world = src.slice(start, src.indexOf('\n};', start))
 const sp = world.match(/spawn:\s*\{\s*x:\s*(\d+)\s*,\s*y:\s*(\d+)\s*\}/)
 const spawn = [Number(sp[1]), Number(sp[2])]
+// \s spans newlines, so this matches zones written on one line or spread over several.
 const zones = [...world.matchAll(
-  /\{\s*x:\s*(\d+),\s*y:\s*(\d+),\s*w:\s*(\d+),\s*h:\s*(\d+),\s*id:\s*'(\w+)'/g,
+  /\{\s*x:\s*(\d+),\s*y:\s*(\d+),\s*w:\s*(\d+),\s*h:\s*(\d+),\s*id:\s*["'](\w+)["']/g,
 )].map((m) => ({ x: +m[1], y: +m[2], w: +m[3], h: +m[4], id: m[5] }))
 
 const { data, info } = await sharp('public/scene/walkmask.png').removeAlpha().raw()

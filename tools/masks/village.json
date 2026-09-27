@@ -1,0 +1,28 @@
+{
+  "seed": [620, 620],
+  "strong": {
+    "lumMin": 110,
+    "lumMax": 200,
+    "satMin": 40,
+    "satMax": 120,
+    "grMin": -68,
+    "grMax": -30,
+    "brMin": -115,
+    "brMax": -55
+  },
+  "weak": {
+    "lumMin": 80,
+    "lumMax": 205,
+    "satMin": 30,
+    "satMax": 125,
+    "grMin": -72,
+    "grMax": -24,
+    "brMin": -120,
+    "brMax": -45
+  },
+  "grow": 8,
+  "bridges": [
+    [1340, 138, 160, 72]
+  ],
+  "cuts": []
+}

@@ -96,9 +96,9 @@ already own, right under the price, so a purchase there is never a guess.
 - **Seed & produce market** and **Ted's tools** are both two scenes, not one,
   neither of them a procedurally-built room — all four are painted flat backgrounds
   with the walkable floor and solid shapes carved out by hand:
-  - Walking through the village door leads to an outdoor plaza or yard (the
-    shopkeeper standing in it, painted into the art), where **talking to them starts
-    the moment you arrive** (see below).
+  - Walking through the village door leads to an outdoor plaza or street (the
+    shopkeeper standing in it as a sprite), where **talking to them starts the
+    moment you walk up to them** (see below).
   - Saying yes sends you on into the shop's interior (the shopkeeper painted in
     again, this time at the counter or workbench). Step up and press `E`/`Enter` to
     buy, sell or upgrade; walk to the door to leave, straight back to the village.
@@ -156,10 +156,21 @@ sends you straight back to the village. The scripts are `TOOL_FIRST_VISIT` and
 
 ## Walking the village
 
-Movement in the village is not bounded by hand-placed rectangles. The road network
+Movement in the village -- and the tool shop's street outside -- is not bounded by
+hand-placed rectangles. **You can only walk on the cobbled roads**: the road network
 is derived from the artwork itself by `tools/roadmask.mjs`, which classifies every
 pixel: roads are warm and desaturated (red leads, then green, then blue), while
 grass and trees invert that, water and sky lead blue, and roofs are too dark.
+
+Each painting has its own settings in `tools/masks/` (`village.json`,
+`toolshop-closeup.json`), because the colours that pick out road differ from one
+painting to the next. Besides the colour bands and the seed point, a config can list
+`bridges` (rectangles forced walkable -- e.g. the tool shop's tan stone doorstep,
+which is too orange to pass as cobble) and `cuts` (rectangles forced blocked -- e.g.
+a market stall's counter painted in road colours). Keep both few and small. The farm
+fields' own dirt paths, the market square's dirt floor, the stone bridge to the
+island cottage, and the roads behind the tool shop's fence and trees are deliberately
+left out: the road stops where the art stops being road.
 
 Two thresholds are used, not one. A strict test finds clean, well-lit road; a loose
 test also admits road lying in shadow, but timber walls satisfy it too — so the
@@ -169,8 +180,9 @@ wall is tens of pixels tall and cannot be climbed within the budget.
 
 The result is cleaned up, eroded, then reduced to the single connected component
 reachable from a seed point, so there is never road you can see but not reach.
-`tools/maskcheck.mjs` verifies that and reports whether each landmark is still
-reachable on foot:
+`tools/maskcheck.mjs` verifies that for the village -- flood-filling from the spawn
+with the same 3px body check the game uses -- and reports whether each landmark is
+still reachable on foot:
 
 ```bash
 node tools/maskcheck.mjs preview.png

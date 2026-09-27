@@ -200,6 +200,22 @@ html, body {
 .dlg-next[hidden] { display: none; }
 @keyframes dlg-bob { 0%, 100% { transform: translateY(50%); } 50% { transform: translateY(calc(50% + 4px)); } }
 
+/* A small plain narration box in the top-left corner, used only for Ted's outdoor
+   conversation (openDialogue's `corner` option) -- a visual-novel "story caption"
+   look, distinct from every other conversation's portrait + name-plate box. */
+#ui > .dlg.corner { left: 16px; right: auto; top: 16px; bottom: auto; padding: 0; }
+.dlg.corner .dlg-box {
+  width: auto; max-width: min(360px, calc(100vw - 32px)); margin: 0;
+  padding: 14px 34px 14px 16px;
+  background: #ece1c4; border: 3px solid #241a10; border-radius: 6px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.35);
+}
+.dlg.corner .dlg-box::after { display: none; }
+#ui > .dlg.corner .dlg-line { text-align: left; font-style: normal; color: #241a10; }
+.dlg.corner .dlg-choices { justify-content: flex-start; }
+.dlg.corner .dlg-next { color: #241a10; }
+
 @media (max-width: 620px) {
   .dlg { padding: 0 8px 10px; }
+  #ui > .dlg.corner { left: 8px; top: 8px; }
 }
