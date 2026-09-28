@@ -123,6 +123,8 @@ const cam = { x: 0, y: 0, follow: true, dragging: false, vx: 0, vy: 0 }
 const zoomMul = new Map<SceneId, number>()
 /** How far past the scene's normal zoom a pinch can go in. */
 const MAX_ZOOM_MUL = 2.5
+/** Step used by the HUD +/- zoom buttons -- one click is a mild pinch, not a jump. */
+const ZOOM_BTN_STEP = 1.2
 
 /**
  * Frame indices into player/f0..f8. **Every frame listed here has to face the same
@@ -641,6 +643,12 @@ function zoomAbout(factor: number, sx: number, sy: number) {
   cam.follow = false
 }
 
+/** The HUD +/- buttons: zoom about the centre of the screen, same clamped range
+ * a pinch or the wheel would use. */
+function zoomButton(dir: 1 | -1) {
+  zoomAbout(dir > 0 ? ZOOM_BTN_STEP : 1 / ZOOM_BTN_STEP, view.w / 2, view.h / 2)
+}
+
 function initCameraGestures() {
   initGestures(canvas, {
     start: () => { cam.dragging = true; cam.vx = cam.vy = 0 },
@@ -1057,7 +1065,10 @@ async function boot() {
   watchSize()
   lockViewport()
   initInput()
-  initUi({ selectTool, cycleSeed, onReset: backToStart })
+  initUi({
+    selectTool, cycleSeed, onReset: backToStart,
+    zoomIn: () => zoomButton(1), zoomOut: () => zoomButton(-1),
+  })
   buildTouch()
   initCameraGestures()
   watchSaveExpiry()

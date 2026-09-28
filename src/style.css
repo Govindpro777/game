@@ -43,6 +43,13 @@ html, body {
 .restartbtn { top: 114px; right: 14px; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; line-height: 1; color: #f3e6cb; }
 .restartbtn:hover { background: rgba(240,205,107,.16); border-color: #f0cd6b; }
 
+/* Below the hint box (which sits at the same top:56/left:14 spot for its first
+   14s), not beside it -- the hint is two lines tall and there's no room to spare. */
+.zoomctl { top: 112px; left: 14px; width: 44px; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.zoomctl button { width: 100%; height: 38px; background: none; border: none; padding: 0; color: #f3e6cb; font-size: 19px; font-weight: 700; font-family: inherit; line-height: 1; cursor: pointer; }
+.zoomctl button:first-child { border-bottom: 1px solid rgba(230,200,140,.35); }
+.zoomctl button:hover { background: rgba(240,205,107,.16); color: #f0cd6b; }
+
 .prompt { left: 50%; bottom: 92px; transform: translateX(-50%); padding: 7px 14px; font-size: 14px; white-space: nowrap; }
 .prompt kbd { display: inline-block; min-width: 20px; text-align: center; padding: 1px 5px; margin: 0 2px; border-radius: 4px; background: #f0cd6b; color: #3a2c16; font-weight: 700; font-family: inherit; font-size: 12.5px; }
 .toast { left: 50%; top: 64px; transform: translateX(-50%); padding: 8px 16px; font-size: 14px; white-space: nowrap; transition: opacity .25s; }
@@ -106,6 +113,8 @@ html, body {
   .bagbtn { right: 10px; width: 38px; height: 38px; }
   .bagbtn img { width: 24px; height: 24px; }
   .restartbtn { top: 104px; right: 10px; width: 38px; height: 38px; font-size: 17px; }
+  .zoomctl { top: 56px; left: 10px; width: 38px; }
+  .zoomctl button { height: 32px; font-size: 16px; }
   .prompt { bottom: 156px; font-size: 13px; }
   .stick { width: 92px; height: 92px; left: 16px; bottom: 18px; }
   .stick .nub { width: 40px; height: 40px; margin: -20px 0 0 -20px; }

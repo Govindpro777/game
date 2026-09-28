@@ -18,6 +18,12 @@ const hotbar = el('div', 'panel hotbar')
 const bagBtn = el('button', 'panel bagbtn', '<img src="/sprites/prop/sacks.png" alt="Inventory" /><span class="badge"></span>')
 const restartBtn = el('button', 'panel restartbtn', '&#8635;')
 restartBtn.title = 'Restart (wipes progress)'
+const zoomCtl = el('div', 'panel zoomctl')
+const zoomInBtn = el('button', '', '+')
+const zoomOutBtn = el('button', '', '&minus;')
+zoomInBtn.title = 'Zoom in'
+zoomOutBtn.title = 'Zoom out'
+zoomCtl.append(zoomInBtn, zoomOutBtn)
 const prompt = el('div', 'panel prompt')
 const toastEl = el('div', 'panel toast')
 const hint = el('div', 'hint')
@@ -36,7 +42,9 @@ restartBtn.onclick = () => {
     hooks.onReset()
   })
 }
-root.append(labelLayer, place, coins, hint, prompt, hotbar, bagBtn, restartBtn, toastEl)
+zoomInBtn.onclick = () => { if (!modalOpen() && !isDialogueOpen()) hooks.zoomIn() }
+zoomOutBtn.onclick = () => { if (!modalOpen() && !isDialogueOpen()) hooks.zoomOut() }
+root.append(labelLayer, place, coins, hint, prompt, hotbar, bagBtn, restartBtn, zoomCtl, toastEl)
 
 export const canAfford = (price: number) => state.unlimited || state.coins >= price
 export const pay = (price: number) => { if (!state.unlimited) state.coins -= price }
@@ -80,6 +88,8 @@ export type UiHooks = {
   selectTool: (t: ToolId) => void
   cycleSeed: () => void
   onReset: () => void
+  zoomIn: () => void
+  zoomOut: () => void
 }
 let hooks: UiHooks
 
