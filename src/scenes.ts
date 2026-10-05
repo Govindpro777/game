@@ -256,6 +256,7 @@ const world: Scene = {
   decor: [
     { src: npc("seedshop_girl"), x: 720, y: 585, s: 0.12 }, // feet on the seed shop's doorstep
     { src: npc("toolshop_owner"), x: 1270, y: 820, s: 0.166 }, // on the road right in front of the tool shop's door
+    { src: npc("farm_owner"), x: 500, y: 665, s: 0.21 }, // Guru, at the farm gate where the road ends
   ],
   blocked: [],
   zones: [
@@ -289,9 +290,38 @@ const world: Scene = {
       h: 56,
       id: "farm",
       label: "Farm",
-      to: "farm",
+      to: "farmcloseup",
     },
   ],
+};
+
+/**
+ * The farm is two scenes too: the village's farm gate leads to `farmcloseup`, the
+ * lane outside it (one flat painting, Guru standing at the end of the road beside
+ * the vegetable cart as a sprite). Walking up to him starts the chat (proximity
+ * check in main.ts), and finishing it carries on into `farm`, the working field.
+ */
+// farm-close-up.png at its native size, walkable on the cobbled lanes only
+// (tools/masks/farm-closeup.json), same approach as the other street scenes.
+const FARM_CLOSEUP_W = 1264;
+const FARM_CLOSEUP_H = 843;
+
+const farmcloseup: Scene = {
+  id: "farmcloseup",
+  name: "Guru’s farm",
+  w: FARM_CLOSEUP_W,
+  h: FARM_CLOSEUP_H,
+  cache: true,
+  mask: "/scene/farm-closeup-walkmask.png",
+  playerScale: 0.5, // doors are ~70px tall here, so this puts Bao a little taller than one
+  zoomBoost: 1.2,
+  spawn: { x: 706, y: 405 }, // on the lane up and right of Guru, where the player marked it
+  ground: (c) =>
+    c.drawImage(img("/scene/farm-closeup.jpg"), 0, 0, FARM_CLOSEUP_W, FARM_CLOSEUP_H),
+  // Guru waits where the lane ends at the vegetable cart, feet at (540, 505).
+  decor: [{ src: npc("farm_owner"), x: 524, y: 413, s: 0.31 }],
+  blocked: [],
+  zones: [],
 };
 
 /**
@@ -574,6 +604,7 @@ const farm: Scene = {
 export const SCENES: Record<SceneId, Scene> = {
   world,
   farm,
+  farmcloseup,
   toolshop,
   toolshopcloseup,
   seedshop,
