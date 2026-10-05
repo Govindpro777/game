@@ -5,6 +5,7 @@ import {
 import {
   FIRST_VISIT, RETURN_VISIT, RETURN_VISIT_STEADY,
   TOOL_FIRST_VISIT, TOOL_RETURN_VISIT,
+  FARM_FIRST_VISIT, FARM_RETURN_VISIT,
 } from './data/dialogue'
 import { initGestures } from './core/gestures'
 import { closeDialogue, dialogueInteract, dialogueMove, isDialogueOpen, openDialogue } from './dialogue'
@@ -250,6 +251,26 @@ const TED_POS = { x: 785, y: 445 }
 const TED_RADIUS = 75
 let nearTed = false
 
+/**
+ * Guru greets the player once they walk up to him at the farm gate -- the same
+ * proximity pattern as Faye and Ted, but with the normal portrait dialogue (his
+ * and Bao's portraits). Finishing the chat walks on into the farm itself.
+ */
+function talkToGuru() {
+  const first = !state.seenFarmIntro
+  const script = first ? FARM_FIRST_VISIT : FARM_RETURN_VISIT
+  openDialogue(script, (outcome) => {
+    if (first && outcome) state.seenFarmIntro = true
+    save()
+    goto(outcome === 'enter' ? 'farm' : 'world')
+  })
+}
+
+/** Where Guru stands at the end of the lane in farm-closeup.jpg (his feet). */
+const GURU_POS = { x: 540, y: 505 }
+const GURU_RADIUS = 70
+let nearGuru = false
+
 let transitioning = false
 
 /**
@@ -262,6 +283,8 @@ const WORLD_RETURN_POS: Partial<Record<SceneId, { x: number; y: number }>> = {
   seedshopinterior: { x: 690, y: 630 },
   toolshopcloseup: { x: 1300, y: 880 },
   toolshop: { x: 1300, y: 880 },
+  farmcloseup: { x: 458, y: 768 },
+  farm: { x: 458, y: 768 },
 }
 
 /**
@@ -290,6 +313,7 @@ async function goto(id: SceneId, instant = false, forceDefaultSpawn = false) {
     land()
     nearFaye = false
     nearTed = false
+    nearGuru = false
     return
   }
   transitioning = true
@@ -297,6 +321,7 @@ async function goto(id: SceneId, instant = false, forceDefaultSpawn = false) {
   land()
   nearFaye = false
   nearTed = false
+  nearGuru = false
   await fade(false)
   transitioning = false
 }
@@ -891,6 +916,11 @@ function frame(now: number) {
       const closeToTed = dist(TED_POS.x, TED_POS.y) < TED_RADIUS
       if (closeToTed && !nearTed) talkToTed()
       nearTed = closeToTed
+    }
+    if (scene.id === 'farmcloseup') {
+      const closeToGuru = dist(GURU_POS.x, GURU_POS.y) < GURU_RADIUS
+      if (closeToGuru && !nearGuru) talkToGuru()
+      nearGuru = closeToGuru
     }
   } else if (modalOpen() && justPressed('escape')) {
     closeModal()

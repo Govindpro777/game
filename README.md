@@ -102,6 +102,10 @@ already own, right under the price, so a purchase there is never a guess.
   - Saying yes sends you on into the shop's interior (the shopkeeper painted in
     again, this time at the counter or workbench). Step up and press `E`/`Enter` to
     buy, sell or upgrade; walk to the door to leave, straight back to the village.
+- **Guru's farm** is two scenes as well: the village's farm gate leads to a painted
+  lane (`farmcloseup`) where Guru, the farm owner, waits as a sprite at the end of
+  the road; walking up to him starts the chat, and finishing it carries on into the
+  farm itself. He also stands at the farm gate in the village.
 - **Your farm** — a 6×4 plot grid, plus trees and rocks.
 
 Every scene change — walking into a building, leaving one, resetting your save —
@@ -153,6 +157,20 @@ asks if you want to come in, `Yes`/`No`. Saying yes, or completing the first-vis
 script, walks you into the shop's interior; declining or escaping the conversation
 sends you straight back to the village. The scripts are `TOOL_FIRST_VISIT` and
 `TOOL_RETURN_VISIT` in `src/data/dialogue.ts`.
+
+## Talking to Guru
+
+The farm gate works like the shops: walking up to Guru in the lane outside the farm
+starts the chat (`talkToGuru()` in `main.ts`, the same proximity pattern as Faye and
+Ted). It's the normal portrait dialogue — Guru's and Bao's portraits, with the stage
+directions ("Guru hands Bao an old shovel…") as centred narration lines. The first
+time ever he gives Bao the plot and the old shovel, and sends him to Faye and Ted;
+that's remembered in your save (`seenFarmIntro`) and never repeats. Every visit
+after that he just asks whether to head onto the farm, `Yes`/`No`. Completing the
+first chat, or saying yes, walks you into the farm; declining or escaping sends you
+back to the village. The scripts are `FARM_FIRST_VISIT` and `FARM_RETURN_VISIT` in
+`src/data/dialogue.ts`. Leaving the farm lands you back at the farm gate in the
+village.
 
 ## Walking the village
 

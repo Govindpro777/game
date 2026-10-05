@@ -7,7 +7,7 @@
  * ('enter' opens the shop, 'leave' leaves the player outside).
  */
 
-export type Speaker = 'faye' | 'bao' | 'ted'
+export type Speaker = 'faye' | 'bao' | 'ted' | 'guru'
 export type DialogueEnd = 'enter' | 'leave'
 
 export type Choice = {
@@ -36,6 +36,7 @@ export const SPEAKERS: Record<Speaker, { name: string; role?: string; portrait: 
   faye: { name: 'Faye', role: 'Seed Shop Owner', portrait: '/portrait/faye.png' },
   bao: { name: 'Bao', portrait: '/portrait/bao.png' },
   ted: { name: 'Ted', role: 'Tool Shop Owner', portrait: '/portrait/ted.png' },
+  guru: { name: 'Guru', role: 'Farm Owner', portrait: '/portrait/guru.png' },
 }
 
 /** Played once, the first time the player ever walks up to the seed shop. */
@@ -274,6 +275,79 @@ export const TOOL_RETURN_VISIT: DialogueScript = {
   },
   explore: {
     text: 'Bao continues to explore the town.',
+    end: 'leave',
+  },
+}
+
+/**
+ * Conversation with Guru, the farm owner, at the gate of his farm. Normal portrait
+ * dialogue (Guru's and Bao's portraits), with narration lines -- no `who` -- for the
+ * stage directions. Finishing it walks the player on into the farm itself.
+ */
+
+/** Played once, the first time the player ever walks up to Guru. */
+export const FARM_FIRST_VISIT: DialogueScript = {
+  start: {
+    who: 'guru',
+    text: 'At Greenville, we pride ourselves on quality, fresh and organic produce.',
+    next: 'bao_good',
+  },
+  bao_good: { who: 'bao', text: 'Good to know.', next: 'plot' },
+  plot: {
+    who: 'guru',
+    text: 'As an introduction to farming, I am giving this plot to you. These tomatoes are ready to harvest. Take my shovel.',
+    next: 'shovel',
+  },
+  shovel: {
+    text: 'Guru hands Bao an old shovel that has seen better days.',
+    next: 'used',
+  },
+  used: { who: 'bao', text: 'It looks a bit, shall we say, used…', next: 'harvest_seen' },
+  harvest_seen: { who: 'guru', text: 'It’s seen many a harvest.', next: 'breaks' },
+  breaks: {
+    text: 'Bao harvests the tomatoes and digs up the empty plants. His shovel breaks.',
+    next: 'gentle',
+  },
+  gentle: {
+    who: 'guru',
+    text: 'A gentle touch was needed there, but you’re new, so I understand. I have a friend, Ted, he owns the tool shop.',
+    next: 'sneeze',
+  },
+  sneeze: {
+    who: 'bao',
+    text: 'Gentle touch? This thing would have fallen apart if I sneezed on it.',
+    next: 'nam',
+  },
+  nam: {
+    who: 'guru',
+    text: 'What was that? I couldn’t hear you. I got shrapnel in the ear back in ’nam. Docs say I can only hear what I want to hear.',
+    next: 'allergies',
+  },
+  allergies: { who: 'bao', text: 'Oh I just said I sneezed. I got allergies.', next: 'faye' },
+  faye: {
+    who: 'guru',
+    text: 'You’re a country boy now, you will get used to it. Ok, last thing from me for now. Take the tomatoes to Faye. She owns the seed store, and she sells produce. She will give you some money for that little lot. Go find Ted, replace that shovel you broke and go be a farmer!',
+    end: 'enter',
+  },
+}
+
+/** Every visit after the first: no backstory, just offers to head onto the farm. */
+export const FARM_RETURN_VISIT: DialogueScript = {
+  start: {
+    who: 'guru',
+    text: 'Back already? Your plot is waiting for you, farmer.',
+    next: 'prompt',
+  },
+  prompt: {
+    text: 'Head onto the farm?',
+    choices: [
+      { label: 'Yes', end: 'enter' },
+      { label: 'No', to: 'decline' },
+    ],
+  },
+  decline: {
+    who: 'guru',
+    text: 'Suit yourself. The crops will keep.',
     end: 'leave',
   },
 }

@@ -35,6 +35,16 @@
  *                                    the conversation can send you into -- Ted is baked into
  *                                    this art too (see scenes.ts). Replaces the original
  *                                    Tool-shop-interior.jpeg, which is no longer read here.
+ *   assets/farm-owner-guru.jpeg   -> public/sprites/npc/farm_owner.png, the farm owner's
+ *                                    standing NPC (a 16-angle turnaround sheet on a painted
+ *                                    checkerboard; the 45 degree pose, left facing right)
+ *   assets/farm-close-up.png      -> public/scene/farm-closeup.jpg + farm-closeup-walkmask.png,
+ *                                    the road by the farm gate the player walks into first;
+ *                                    Guru stands there as a sprite, and talking to him is
+ *                                    what leads on into the farm itself
+ *
+ * public/portrait/guru.png (his dialogue portrait) has no source in here: it is
+ * placed by hand, like bao.png and faye.png now are -- see step 7.
  *
  * The Gemini sheets have their "transparent" checkerboard (or, for the tool shop owner, a
  * painted floor tile) baked in as real pixels, so every source image goes through
@@ -160,8 +170,33 @@ mkdirSync(`${OUT}/npc`, { recursive: true })
   await sharp(cell).trim({ threshold: 10 }).toFile(`${OUT}/npc/toolshop_owner.png`)
 }
 
+/* 6c. farm owner (Guru): a 16-angle turnaround sheet -- one full rotation in 22.5
+   degree steps, each pose captioned underneath -- on the same painted-checkerboard
+   problem as the other Gemini sheets, so it goes through dealpha.mjs first. Row 0
+   starts at the front view and turns toward the viewer's right, so its third pose
+   (45 degrees) is a friendly 3/4 view facing right. Left unmirrored, like Ted: Guru
+   stands at the end of the road by the vegetable cart and the player walks up to him
+   from its right. The height filter keeps the pose captions (tiny text blobs) out. */
+{
+  const GURU_SHEET = `${GEN}/farm-owner-guru-alpha.png`
+  run(`node tools/dealpha.mjs "assets/farm-owner-guru.jpeg" "${GURU_SHEET}"`)
+  const guruBoxes = JSON.parse(run(`node tools/blobs.mjs ${GURU_SHEET} 700`).split('\n')[0])
+  const guruRow0 = guruBoxes.filter((b) => b.h > 150 && b.y < 300).sort((a, b) => a.x - b.x)
+  if (guruRow0.length !== 9) console.warn(`expected 9 poses in Guru's first row, found ${guruRow0.length}`)
+  const pose = guruRow0[2]
+  const cell = await sharp(GURU_SHEET)
+    .extract({ left: pose.x, top: pose.y, width: pose.w, height: pose.h })
+    .png().toBuffer()
+  await sharp(cell).trim({ threshold: 10 }).toFile(`${OUT}/npc/farm_owner.png`)
+}
+
 /* 7. dialogue portraits: already painted inside ornate frames, so they go in whole,
-   just downscaled to roughly 3x their on-screen size */
+   just downscaled to roughly 3x their on-screen size.
+   NOTE: this overwrites public/portrait/<name>.png every run. bao.png and faye.png
+   there are now hand-placed 1024px replacements of different art than the sources
+   below, and guru.png has no source at all -- so a plain `npm run slice` regresses
+   the first two to the old 400px portraits. Back them up (or re-copy them) after a
+   run until the sources here are updated to match. */
 mkdirSync('public/portrait', { recursive: true })
 for (const [src, name] of [
   ['assets/girl-profile.png', 'faye'], ['assets/boy-profile.png', 'bao'], ['assets/tool-shop-avtar.png', 'ted'],
@@ -178,6 +213,9 @@ await sharp('assets/seed-shop.png').png({ compressionLevel: 9 }).toFile('public/
 await sharp('assets/new-tool-shop-closeup.png').removeAlpha().jpeg({ quality: 90 }).toFile('public/scene/toolshop-closeup.jpg')
 run('node tools/roadmask.mjs assets/new-tool-shop-closeup.png public/scene/toolshop-closeup-walkmask.png "" tools/masks/toolshop-closeup.json')
 await sharp('assets/Tool-shop-interior-2.jpeg').jpeg({ quality: 90 }).toFile('public/scene/toolshop-interior.jpg')
+// The farm gate's street, same rule: native size (1264x843), mask from the same image.
+await sharp('assets/farm-close-up.png').removeAlpha().jpeg({ quality: 90 }).toFile('public/scene/farm-closeup.jpg')
+run('node tools/roadmask.mjs assets/farm-close-up.png public/scene/farm-closeup-walkmask.png "" tools/masks/farm-closeup.json')
 
 /* 9. small UI icons, used as-is */
 mkdirSync('public/icon', { recursive: true })

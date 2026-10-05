@@ -1,7 +1,8 @@
 import { CROP_IDS, CROPS, type CropId } from './data/crops'
 import { TOOL_IDS, type ToolId } from './data/tools'
 
-export type SceneId = 'world' | 'farm' | 'toolshop' | 'toolshopcloseup' | 'seedshop' | 'seedshopinterior'
+export type SceneId =
+  | 'world' | 'farm' | 'farmcloseup' | 'toolshop' | 'toolshopcloseup' | 'seedshop' | 'seedshopinterior'
 
 export type Plot = {
   tilled: boolean
@@ -28,6 +29,7 @@ export type Save = {
    * the "did you meet Ted?" return-visit script in favour of the steady-state one. */
   metTedConfirms: number
   seenToolShopIntro: boolean
+  seenFarmIntro: boolean
   /** When this save was first created -- not touched by later saves. Used to
    * auto-wipe the save after SAVE_TTL_MS regardless of how recently it was
    * played, rather than just how recently it was saved. */
@@ -63,6 +65,7 @@ export function freshSave(): Save {
     seenSeedShopIntro: false,
     metTedConfirms: 0,
     seenToolShopIntro: false,
+    seenFarmIntro: false,
     createdAt: Date.now(),
     savedAt: Date.now(),
   }
